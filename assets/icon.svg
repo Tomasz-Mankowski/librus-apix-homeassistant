@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Librus APIX icon (light backgrounds). Own design: gradebook with a check mark and a notification bell.
+     Render to PNG with scripts/render-icons.ps1 in the librus-homeassistant dev repo. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 26 208 208" width="256" height="256">
+  <!-- Gradebook -->
+  <rect x="34" y="40" width="156" height="190" rx="18" fill="#0F766E"/>
+  <path d="M62 40 H52 A18 18 0 0 0 34 58 V212 A18 18 0 0 0 52 230 H62 Z" fill="#115E59"/>
+  <g fill="#E2E8F0">
+    <rect x="24" y="72" width="46" height="10" rx="5"/>
+    <rect x="24" y="110" width="46" height="10" rx="5"/>
+    <rect x="24" y="148" width="46" height="10" rx="5"/>
+    <rect x="24" y="186" width="46" height="10" rx="5"/>
+  </g>
+  <rect x="82" y="72" width="66" height="24" rx="7" fill="#FFFFFF"/>
+  <path d="M92 162 L115 185 L162 136" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Notification badge -->
+  <circle cx="196" cy="64" r="34" fill="#F59E0B"/>
+  <g fill="#422006">
+    <path d="M184 72 V58 A12 12 0 0 1 208 58 V72 L213 78 H179 Z"/>
+    <circle cx="196" cy="84" r="4.5"/>
+    <circle cx="196" cy="44" r="3.5"/>
+  </g>
+</svg>

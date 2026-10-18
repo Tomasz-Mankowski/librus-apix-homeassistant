@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Logowanie do Librus Synergia",
+        "description": "Podaj login i hasło konta rodzica lub ucznia. Jeden wpis to jeden uczeń.",
+        "data": {
+          "username": "Login",
+          "password": "Hasło"
+        },
+        "data_description": {
+          "username": "Login konta rodzica lub ucznia w Librus Synergia.",
+          "password": "Hasło do tego konta."
+        }
+      }
+    },
+    "abort": {
+      "not_implemented": "Konfiguracja nie jest jeszcze dostępna w tej wersji."
+    }
+  }
+}

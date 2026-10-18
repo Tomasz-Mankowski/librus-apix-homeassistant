@@ -1,0 +1,13 @@
+{
+  "domain": "librus_apix",
+  "name": "Librus APIX",
+  "codeowners": ["@Tomasz-Mankowski"],
+  "config_flow": true,
+  "documentation": "https://github.com/Tomasz-Mankowski/librus-apix-homeassistant",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/issues",
+  "loggers": ["librus_apix"],
+  "requirements": ["librus-apix==1.6.0"],
+  "version": "0.1.0"
+}

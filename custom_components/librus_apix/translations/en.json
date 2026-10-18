@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Librus Synergia login",
+        "description": "Enter the login and password of a parent or student account. One entry is one student.",
+        "data": {
+          "username": "Login",
+          "password": "Password"
+        },
+        "data_description": {
+          "username": "Librus Synergia login of the parent or student account.",
+          "password": "Password of the same account."
+        }
+      }
+    },
+    "abort": {
+      "not_implemented": "Setup is not available yet in this version."
+    }
+  }
+}
