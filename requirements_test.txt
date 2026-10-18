@@ -1,0 +1,9 @@
+# Test dependencies, installed in the test container (docker/core-test.Dockerfile
+# in the librus-homeassistant dev repo).
+# pytest-homeassistant-custom-component pins homeassistant and the pytest/coverage
+# stack: 0.13.373 = homeassistant 2026.10.2. Keep it in step with the dev HA version.
+pytest-homeassistant-custom-component==0.13.373
+ruff==0.16.10
+
+# Integration requirement (same pin as manifest.json).
+librus-apix==1.6.0

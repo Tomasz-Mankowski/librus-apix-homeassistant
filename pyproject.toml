@@ -1,0 +1,45 @@
+# Tool configuration only. The integration itself is installed by HACS, not pip.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["custom_components/librus_apix"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_empty = true
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "ASYNC", # async pitfalls (blocking calls in the event loop)
+    "B",     # bugbear
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "G",     # logging format (no f-strings in log calls)
+    "I",     # import order
+    "LOG",   # logging misuse
+    "PT",    # pytest style
+    "RUF",   # ruff-specific
+    "SIM",   # simplifications
+    "UP",    # modern syntax
+    "W",     # pycodestyle warnings
+]
+ignore = [
+    "E501", # line length is handled by the formatter
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["custom_components"]
