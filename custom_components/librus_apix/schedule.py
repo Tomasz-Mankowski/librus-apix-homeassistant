@@ -6,6 +6,8 @@
   one hour from it; neither -> an all-day event.
 - The calendar description is readable lines, then one JSON line with all fields
   (D-018), so cards and automations can read it back with ``parse_description``.
+- Triggers (F5, F17): the tracker scope of an event is its month, so months that
+  a larger timeframe adds fire nothing.
 """
 
 from dataclasses import dataclass, field
@@ -30,6 +32,16 @@ JSON_KEY = "librus_apix"
 JSON_VERSION = 1
 _HOUR = re.compile(r"(\d{1,2}):(\d{2})")
 _UNKNOWN = "unknown"
+# Fields whose change fires changed_event ("date_added" and "details" do not).
+SNAPSHOT_FIELDS = (
+    "date",
+    "lesson",
+    "hour",
+    "type",
+    "subject",
+    "teacher",
+    "description",
+)
 
 type Bells = dict[int, tuple[str, str]]
 
@@ -210,6 +222,29 @@ def event_fields(event: ScheduleEvent) -> dict[str, Any]:
         "description": event.description,
         "date_added": event.date_added,
         "details": event.detail,
+    }
+
+
+def month_scope(day: date) -> str:
+    """Tracker scope of an event: its month, "2026-10"."""
+    return f"{day.year:04d}-{day.month:02d}"
+
+
+def snapshot(event: ScheduleEvent) -> dict[str, Any]:
+    """Values compared between polls; another value fires changed_event."""
+    fields = event_fields(event)
+    return {key: fields[key] for key in SNAPSHOT_FIELDS}
+
+
+def trigger_details(event: ScheduleEvent, bells: Bells) -> dict[str, Any]:
+    """Event data of a trigger: all fields, the title and the calendar times."""
+    start, end = event_times(event, bells)
+    return {
+        **event_fields(event),
+        "summary": summary(event),
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "all_day": not isinstance(start, datetime),
     }
 
 

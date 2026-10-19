@@ -254,6 +254,17 @@
             }
           }
         }
+      },
+      "schedule": {
+        "name": "Schedule",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_event": "New event",
+              "changed_event": "Event changed"
+            }
+          }
+        }
       }
     },
     "calendar": {

@@ -1,6 +1,6 @@
 """Data update coordinators: one per data type and entry, each with its own interval."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 import hashlib
 import logging
@@ -53,10 +53,12 @@ from .grades import (
 from .schedule import (
     Bells,
     ScheduleEvent,
+    month_scope,
     months_in_range,
     read_bells,
     read_details,
     read_months,
+    snapshot,
 )
 from .store import LibrusStore
 from .tracker import Change, TrackedItem, Tracker
@@ -408,12 +410,14 @@ class ScheduleData:
 
     months: list[tuple[int, int]]
     events: list[ScheduleEvent]
+    changes: list[Change[ScheduleEvent]] = field(default_factory=list)
 
 
 class ScheduleCoordinator(LibrusCoordinator[ScheduleData]):
     """Schedule of the current month and the next N months (F4, F5).
 
     A detail page is read once per new or changed event and kept in the store.
+    The tracker scope is the month: months a larger timeframe adds fire nothing.
     """
 
     def __init__(
@@ -429,6 +433,13 @@ class ScheduleCoordinator(LibrusCoordinator[ScheduleData]):
             CONF_TIMEFRAME, DEFAULT_OPTIONS[CONF_TIMEFRAME]
         )
         self._store = store
+        self._tracker: Tracker[ScheduleEvent] = Tracker(store, "schedule")
+
+    @property
+    def bells(self) -> Bells:
+        """Bell schedule from the student coordinator ({} before its first poll)."""
+        student = self.config_entry.runtime_data.student.data
+        return student.bells if student else {}
 
     async def _async_fetch(self) -> ScheduleData:
         months = months_in_range(dt_util.now(LIBRUS_TZ).date(), self._timeframe)
@@ -458,4 +469,11 @@ class ScheduleCoordinator(LibrusCoordinator[ScheduleData]):
             replace(event, detail=cache.get(event.id, {}).get("detail", {}))
             for event in listed
         ]
-        return ScheduleData(months, events)
+        changes = self._tracker.update(
+            (
+                TrackedItem(event.id, snapshot(event), event, month_scope(event.day))
+                for event in events
+            ),
+            scopes=[month_scope(date(year, month, 1)) for year, month in months],
+        )
+        return ScheduleData(months, events, changes)

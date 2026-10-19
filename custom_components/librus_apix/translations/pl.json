@@ -254,6 +254,17 @@
             }
           }
         }
+      },
+      "schedule": {
+        "name": "Terminarz",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_event": "Nowe wydarzenie",
+              "changed_event": "Zmiana wydarzenia"
+            }
+          }
+        }
       }
     },
     "calendar": {

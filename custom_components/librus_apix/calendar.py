@@ -50,8 +50,7 @@ class ScheduleCalendar(LibrusEntity[ScheduleCoordinator], CalendarEntity):
         if self.coordinator.data is None:
             # Added before the first schedule poll has finished.
             return []
-        student = self.coordinator.config_entry.runtime_data.student.data
-        bells = student.bells if student else {}
+        bells = self.coordinator.bells
         events = []
         for event in self.coordinator.data.events:
             start, end = event_times(event, bells)

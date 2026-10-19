@@ -20,11 +20,14 @@ from .coordinator import (
     LibrusCoordinator,
     MessagesCoordinator,
     MessagesData,
+    ScheduleCoordinator,
+    ScheduleData,
     announcement_details,
     message_details,
 )
 from .entity import LibrusEntity
 from .grades import GradesPage, descriptive_details, final_details, grade_details
+from .schedule import trigger_details
 
 ATTR_STUDENT = "student"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
@@ -35,6 +38,8 @@ EVENT_NEW_GRADE = "new_grade"
 EVENT_GRADE_CHANGED = "grade_changed"
 EVENT_FINAL_GRADE = "final_grade"
 EVENT_NEW_DESCRIPTIVE_GRADE = "new_descriptive_grade"
+EVENT_NEW_EVENT = "new_event"
+EVENT_CHANGED_EVENT = "changed_event"
 
 # Coordinators fetch the data; entities never poll.
 PARALLEL_UPDATES = 0
@@ -53,6 +58,7 @@ async def async_setup_entry(
             AnnouncementsEvent(data.announcements),
             GradesEvent(data.grades),
             DescriptiveGradesEvent(data.grades),
+            ScheduleEventEntity(data.schedule),
         ]
     )
 
@@ -221,3 +227,36 @@ class DescriptiveGradesEvent(LibrusEventEntity[GradesCoordinator]):
             for change in data.descriptive_changes
             if change.kind == "new"
         ]
+
+
+class ScheduleEventEntity(LibrusEventEntity[ScheduleCoordinator]):
+    """new_event and changed_event for the schedule (calendar times included).
+
+    changed_event also has ``old`` (the values before) and ``changed`` (the names
+    of the fields that differ).
+    """
+
+    # The detail-page fields repeat the other attributes: keep them out of the recorder.
+    _unrecorded_attributes = frozenset({"details"})
+
+    def __init__(self, coordinator: ScheduleCoordinator) -> None:
+        """Create the schedule event entity."""
+        super().__init__(
+            coordinator,
+            EventEntityDescription(
+                key="schedule",
+                translation_key="schedule",
+                event_types=[EVENT_NEW_EVENT, EVENT_CHANGED_EVENT],
+            ),
+        )
+
+    def _events(self, data: ScheduleData) -> Iterable[tuple[str, dict[str, Any]]]:
+        bells = self.coordinator.bells
+        for change in data.changes:
+            details = trigger_details(change.item, bells)
+            if change.kind == "new":
+                yield EVENT_NEW_EVENT, details
+            else:
+                old = change.old or {}
+                changed = [key for key, value in old.items() if details[key] != value]
+                yield EVENT_CHANGED_EVENT, {**details, "old": old, "changed": changed}
