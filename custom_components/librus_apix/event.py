@@ -24,7 +24,7 @@ from .coordinator import (
     message_details,
 )
 from .entity import LibrusEntity
-from .grades import GradesPage, final_details, grade_details
+from .grades import GradesPage, descriptive_details, final_details, grade_details
 
 ATTR_STUDENT = "student"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
@@ -34,6 +34,7 @@ EVENT_NEW_MESSAGE = "new_message"
 EVENT_NEW_GRADE = "new_grade"
 EVENT_GRADE_CHANGED = "grade_changed"
 EVENT_FINAL_GRADE = "final_grade"
+EVENT_NEW_DESCRIPTIVE_GRADE = "new_descriptive_grade"
 
 # Coordinators fetch the data; entities never poll.
 PARALLEL_UPDATES = 0
@@ -51,6 +52,7 @@ async def async_setup_entry(
             MessagesEvent(data.messages),
             AnnouncementsEvent(data.announcements),
             GradesEvent(data.grades),
+            DescriptiveGradesEvent(data.grades),
         ]
     )
 
@@ -194,3 +196,28 @@ class GradesEvent(LibrusEventEntity[GradesCoordinator]):
                     "old_grade": change.old["grade"] if change.old else None,
                 },
             )
+
+
+class DescriptiveGradesEvent(LibrusEventEntity[GradesCoordinator]):
+    """new_descriptive_grade for each new descriptive grade, with its text."""
+
+    # The text can be long: keep it out of the recorder.
+    _unrecorded_attributes = frozenset({"content", "description"})
+
+    def __init__(self, coordinator: GradesCoordinator) -> None:
+        """Create the descriptive grades event entity."""
+        super().__init__(
+            coordinator,
+            EventEntityDescription(
+                key="descriptive_grades",
+                translation_key="descriptive_grades",
+                event_types=[EVENT_NEW_DESCRIPTIVE_GRADE],
+            ),
+        )
+
+    def _events(self, data: GradesPage) -> Iterable[tuple[str, dict[str, Any]]]:
+        return [
+            (EVENT_NEW_DESCRIPTIVE_GRADE, descriptive_details(change.item))
+            for change in data.descriptive_changes
+            if change.kind == "new"
+        ]

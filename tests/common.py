@@ -307,6 +307,76 @@ def grades_page(subjects: list[FakeSubject]) -> str:
 
 
 @dataclass
+class FakeDescriptive:
+    """An old-schema descriptive grade."""
+
+    grade: str
+    date: str
+    content: str
+    semester: int = 1
+
+
+@dataclass
+class FakeDescriptiveSubject:
+    """A row of the old-schema descriptive grades table."""
+
+    name: str
+    teacher: str
+    grades: list[FakeDescriptive] = field(default_factory=list)
+
+
+def default_descriptive() -> list[FakeDescriptiveSubject]:
+    """Two descriptive grades in semester 1, like mock A."""
+    return [
+        FakeDescriptiveSubject(
+            "Edukacja zdrowotna",
+            "Magdalena Przykładowa",
+            [
+                FakeDescriptive("OP", "2026-09-23", "Zna zasady zdrowego odżywiania."),
+                FakeDescriptive("WY", "2026-10-15", "Wyróżniająca prezentacja."),
+            ],
+        )
+    ]
+
+
+def descriptive_table(subjects: list[FakeDescriptiveSubject]) -> str:
+    """Return the old-schema descriptive grades table (empty without subjects)."""
+    rows = []
+    for i, subject in enumerate(subjects):
+        cells = []
+        for semester in (1, 2):
+            boxes = "".join(
+                '<span class="grade-box"><a href="javascript:void(0);" title="'
+                + html.escape(
+                    f"Data: {g.date} (pon.)<br>Nauczyciel: {subject.teacher}<br>"
+                    f"Treść oceny: {g.content}"
+                )
+                + f'">{g.grade}</a></span>'
+                for g in subject.grades
+                if g.semester == semester
+            )
+            cells.append(f"<td>{boxes}</td>")
+        rows.append(
+            f'<tr class="line{i % 2}"><td class="micro center screen-only"></td>'
+            f"<td>{subject.name}</td>{''.join(cells)}</tr>"
+        )
+    if not rows:
+        return ""
+    return f'<table class="decorated stretch"><tbody>{"".join(rows)}</tbody></table>'
+
+
+def new_schema_table(subjects: dict[int, str]) -> str:
+    """Return the new-schema table (grades come from the gateway API)."""
+    if not subjects:
+        return ""
+    rows = "".join(
+        f'<tr class="studentRow" data-subject_id="{number}"><td></td><td>{name}</td></tr>'
+        for number, name in subjects.items()
+    )
+    return f'<table class="newSchemaGradesByStudentTable">{rows}</table>'
+
+
+@dataclass
 class FakeServer:
     """Synergia pages of one student, served through requests-mock."""
 
@@ -314,6 +384,10 @@ class FakeServer:
     messages: list[FakeMessage] = field(default_factory=default_messages)
     announcements: list[FakeAnnouncement] = field(default_factory=default_announcements)
     subjects: list[FakeSubject] = field(default_factory=default_subjects)
+    descriptive: list[FakeDescriptiveSubject] = field(
+        default_factory=default_descriptive
+    )
+    new_schema: dict[int, str] = field(default_factory=dict)
     lucky: str | None = "7"
 
     def __post_init__(self) -> None:
@@ -321,7 +395,11 @@ class FakeServer:
         self.mocker.get(f"{MOCK_URL}/informacja", text=self._info)
         self.mocker.post(
             f"{MOCK_URL}/przegladaj_oceny/uczen",
-            text=lambda request, context: grades_page(self.subjects),
+            text=lambda request, context: (
+                grades_page(self.subjects)
+                + descriptive_table(self.descriptive)
+                + new_schema_table(self.new_schema)
+            ),
         )
         self.mocker.get(
             f"{MOCK_URL}/ogloszenia",

@@ -7,6 +7,7 @@ it fetched, so those cells are read from the same page without a second request.
 """
 
 from dataclasses import asdict, dataclass, field
+import hashlib
 import re
 from typing import Any
 
@@ -29,6 +30,7 @@ PERIODS = (SEMESTER_1, SEMESTER_2, YEAR)
 _FINAL_CELLS = {3: SEMESTER_1, 6: SEMESTER_2, 8: YEAR}
 _TOGGLE = ["center", "micro", "screen-only"]
 _COMMENT = re.compile(r"Komentarz: (.*)")
+_CONTENT = re.compile(r"Treść oceny: (.*)")
 
 
 @dataclass
@@ -72,6 +74,15 @@ class FinalItem:
     final: FinalGrade
 
 
+@dataclass(frozen=True)
+class DescriptiveItem:
+    """A descriptive grade with its subject and semester."""
+
+    subject: str
+    semester: int
+    grade: GradeDescriptive
+
+
 @dataclass
 class GradesPage:
     """Everything read from the grades page; ``semester`` is the current one.
@@ -86,6 +97,24 @@ class GradesPage:
     corrections: dict[str, str] = field(default_factory=dict)
     grade_changes: list[Change[GradeItem]] = field(default_factory=list)
     final_changes: list[Change[FinalItem]] = field(default_factory=list)
+    descriptive_changes: list[Change[DescriptiveItem]] = field(default_factory=list)
+
+    def descriptive_items(self) -> list[DescriptiveItem]:
+        """All descriptive grades in date order."""
+        items = [
+            DescriptiveItem(subject, semester, grade)
+            for semester, by_subject in enumerate(self.descriptive, 1)
+            for subject, grades in by_subject.items()
+            for grade in grades
+        ]
+        return sorted(items, key=lambda item: (item.grade.date, descriptive_id(item)))
+
+    def descriptive_subjects(self) -> dict[str, list[DescriptiveItem]]:
+        """Descriptive grades by subject; subjects without any are left out."""
+        subjects: dict[str, list[DescriptiveItem]] = {}
+        for item in self.descriptive_items():
+            subjects.setdefault(item.subject, []).append(item)
+        return subjects
 
 
 class _PageKeeper:
@@ -259,3 +288,35 @@ def grade_details(grade: Grade, rules: AverageRules) -> dict[str, Any]:
 def final_details(final: FinalGrade) -> dict[str, Any]:
     """All details of a semester or year grade."""
     return asdict(final)
+
+
+def descriptive_id(item: DescriptiveItem) -> str:
+    """Stable id of a descriptive grade: the library gives none."""
+    grade = item.grade
+    key = "|".join(
+        (
+            item.subject,
+            str(item.semester),
+            grade.date,
+            grade.grade,
+            grade.teacher,
+            grade.desc,
+        )
+    )
+    return hashlib.sha1(key.encode()).hexdigest()[:16]
+
+
+def descriptive_details(item: DescriptiveItem) -> dict[str, Any]:
+    """All details of a descriptive grade; ``content`` is the teacher's text."""
+    grade = item.grade
+    content = _CONTENT.search(grade.desc)
+    return {
+        "id": descriptive_id(item),
+        "subject": item.subject,
+        "semester": item.semester,
+        "grade": grade.grade,
+        "date": grade.date,
+        "teacher": grade.teacher,
+        "content": content[1].strip() if content else grade.desc.strip(),
+        "description": grade.desc.strip(),
+    }

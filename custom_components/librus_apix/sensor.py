@@ -27,7 +27,14 @@ from .coordinator import (
     message_details,
 )
 from .entity import LibrusEntity
-from .grades import PERIODS, SubjectGrades, final_details, grade_details, period_average
+from .grades import (
+    PERIODS,
+    SubjectGrades,
+    descriptive_details,
+    final_details,
+    grade_details,
+    period_average,
+)
 
 ATTR_ANNOUNCEMENTS = "announcements"
 ATTR_MESSAGES = "messages"
@@ -83,7 +90,10 @@ async def async_setup_entry(
     entry: LibrusConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the sensors; a grade sensor for each subject, also for new subjects."""
+    """Add the sensors; grade sensors for each subject, also for new subjects.
+
+    A descriptive-grade sensor is added only for a subject that has such grades.
+    """
     data = entry.runtime_data
     async_add_entities(
         [
@@ -94,14 +104,26 @@ async def async_setup_entry(
     )
 
     known: set[str] = set()
+    known_descriptive: set[str] = set()
 
     @callback
     def _add_subjects() -> None:
-        if data.grades.data is None:
+        if (page := data.grades.data) is None:
             return
-        new = [name for name in data.grades.data.subjects if name not in known]
+        new = [name for name in page.subjects if name not in known]
         known.update(new)
-        async_add_entities(SubjectSensor(data.grades, name) for name in new)
+        new_descriptive = [
+            name
+            for name in page.descriptive_subjects()
+            if name not in known_descriptive
+        ]
+        known_descriptive.update(new_descriptive)
+        async_add_entities(
+            [
+                *(SubjectSensor(data.grades, name) for name in new),
+                *(DescriptiveSensor(data.grades, name) for name in new_descriptive),
+            ]
+        )
 
     _add_subjects()
     entry.async_on_unload(data.grades.async_add_listener(_add_subjects))
@@ -240,4 +262,40 @@ class SubjectSensor(LibrusEntity[GradesCoordinator], SensorEntity):
                 for number, period in ((1, PERIODS[0]), (2, PERIODS[1]))
             },
             "final_grades": [final_details(f) for f in subject.finals],
+        }
+
+
+class DescriptiveSensor(LibrusEntity[GradesCoordinator], SensorEntity):
+    """Number of descriptive grades of one subject; the grades as an attribute."""
+
+    # The texts can be long: keep them out of the recorder (16 KB attribute limit).
+    _unrecorded_attributes = frozenset({"grades"})
+
+    def __init__(self, coordinator: GradesCoordinator, subject: str) -> None:
+        """Create the descriptive-grade sensor of ``subject``."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(
+                key=f"descriptive_{slugify(subject)}",
+                translation_key="subject_descriptive",
+            ),
+        )
+        self._subject = subject
+        self._attr_translation_placeholders = {"subject": subject}
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of descriptive grades."""
+        return len(self.coordinator.data.descriptive_subjects().get(self._subject, []))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the descriptive grades by semester."""
+        items = self.coordinator.data.descriptive_subjects().get(self._subject, [])
+        return {
+            "subject": self._subject,
+            "grades": {
+                period: [descriptive_details(i) for i in items if i.semester == number]
+                for number, period in ((1, PERIODS[0]), (2, PERIODS[1]))
+            },
         }

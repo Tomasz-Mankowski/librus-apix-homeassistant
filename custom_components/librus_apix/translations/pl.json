@@ -161,6 +161,17 @@
             "name": "Oceny śródroczne i roczne"
           }
         }
+      },
+      "subject_descriptive": {
+        "name": "{subject} – oceny opisowe",
+        "state_attributes": {
+          "subject": {
+            "name": "Przedmiot"
+          },
+          "grades": {
+            "name": "Oceny opisowe"
+          }
+        }
       }
     },
     "event": {
@@ -192,6 +203,16 @@
               "new_grade": "Nowa ocena",
               "grade_changed": "Zmiana oceny",
               "final_grade": "Ocena śródroczna lub roczna"
+            }
+          }
+        }
+      },
+      "descriptive_grades": {
+        "name": "Oceny opisowe",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_descriptive_grade": "Nowa ocena opisowa"
             }
           }
         }

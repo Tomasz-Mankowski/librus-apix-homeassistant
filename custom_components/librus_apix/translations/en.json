@@ -161,6 +161,17 @@
             "name": "Semester and year grades"
           }
         }
+      },
+      "subject_descriptive": {
+        "name": "{subject} – descriptive grades",
+        "state_attributes": {
+          "subject": {
+            "name": "Subject"
+          },
+          "grades": {
+            "name": "Descriptive grades"
+          }
+        }
       }
     },
     "event": {
@@ -192,6 +203,16 @@
               "new_grade": "New grade",
               "grade_changed": "Grade changed",
               "final_grade": "Semester or year grade"
+            }
+          }
+        }
+      },
+      "descriptive_grades": {
+        "name": "Descriptive grades",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_descriptive_grade": "New descriptive grade"
             }
           }
         }

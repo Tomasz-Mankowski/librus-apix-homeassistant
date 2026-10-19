@@ -33,9 +33,11 @@ from .const import (
 )
 from .exceptions import LibrusAuthError, LibrusError, LibrusUnavailableError
 from .grades import (
+    DescriptiveItem,
     FinalItem,
     GradeItem,
     GradesPage,
+    descriptive_id,
     grade_items,
     item_id,
     read_grades,
@@ -339,6 +341,9 @@ class GradesCoordinator(LibrusCoordinator[GradesPage]):
         self.rules = AverageRules()
         self._grade_tracker: Tracker[GradeItem] = Tracker(store, "grades")
         self._final_tracker: Tracker[FinalItem] = Tracker(store, "final_grades")
+        self._descriptive_tracker: Tracker[DescriptiveItem] = Tracker(
+            store, "descriptive_grades"
+        )
 
     async def _async_fetch(self) -> GradesPage:
         page = await self.api.async_call(read_grades)
@@ -355,5 +360,9 @@ class GradesCoordinator(LibrusCoordinator[GradesPage]):
             )
             for name, subject in page.subjects.items()
             for final in subject.finals
+        )
+        page.descriptive_changes = self._descriptive_tracker.update(
+            TrackedItem(descriptive_id(item), {}, item)
+            for item in page.descriptive_items()
         )
         return page
