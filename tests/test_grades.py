@@ -11,6 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.librus_apix.const import DOMAIN
 from custom_components.librus_apix.grades import (
+    _number,
     _PageKeeper,
     _tooltip,
     read_final_grades,
@@ -92,12 +93,24 @@ async def test_grades_and_final_grades_with_all_details(
     ]
 
 
+@pytest.mark.parametrize(
+    "hidden",
+    [("-", "-", "-"), None],
+    ids=["dash", "hidden by the school"],
+)
 async def test_hidden_averages_are_calculated(
-    hass: HomeAssistant, mock_server: FakeServer, config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    mock_server: FakeServer,
+    config_entry: MockConfigEntry,
+    hidden: tuple[str, str, str] | None,
 ) -> None:
-    """Without Librus averages the state is calculated: (10+4.5+3+12)/9."""
+    """Without Librus averages the state is calculated: (10+4.5+3+12)/9.
+
+    None: empty cells without the "right" class, as on a school that hides
+    averages; the library gives 0.0 for them (live test I-003).
+    """
     for subject in mock_server.subjects:
-        subject.averages = ("-", "-", "-")
+        subject.averages = hidden
 
     await _setup(hass, config_entry)
 
@@ -106,6 +119,9 @@ async def test_hidden_averages_are_calculated(
     assert math.attributes["average_source"] == "calculated"
     assert math.attributes["averages"]["semester_1"] == 3.28
     assert _state(hass, config_entry, "jezyk_polski").state == "4.0"
+    art = _state(hass, config_entry, "plastyka")
+    assert art.state == STATE_UNKNOWN
+    assert art.attributes["average_source"] is None
 
 
 async def test_second_semester_is_current_once_it_has_grades(
@@ -200,3 +216,21 @@ def test_tooltip_parts_without_a_value_are_skipped() -> None:
     ).a
 
     assert _tooltip(tag) == {"Kategoria": "Test", "Waga": "2"}
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("3,69", 3.69),
+        ("4.00", 4.0),
+        ("-", None),
+        ("", None),
+        ("0.00", None),
+        (0.0, None),
+    ],
+)
+def test_librus_average_only_when_shown(
+    value: float | str, expected: float | None
+) -> None:
+    """0 is no average: the library's 0.0 for missing cells, or Librus' "0.00"."""
+    assert _number(value) == expected

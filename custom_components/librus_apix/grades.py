@@ -37,6 +37,8 @@ _FINAL_CELLS = {3: SEMESTER_1, 6: SEMESTER_2, 8: YEAR}
 _TOGGLE = ["center", "micro", "screen-only"]
 _COMMENT = re.compile(r"Komentarz: (.*)")
 _CONTENT = re.compile(r"Treść oceny: (.*)")
+# Rows of the grades table that never count towards the GPA (D-103).
+NOT_IN_GPA = frozenset({"zachowanie"})
 
 
 @dataclass
@@ -146,11 +148,17 @@ def grade_id(href: str) -> str:
 
 
 def _number(value: float | str) -> float | None:
-    """Average shown by Librus as a number; "-" or empty when not shown."""
+    """Average shown by Librus as a number; None when not shown.
+
+    "-" or empty: no average. A school that hides averages has empty cells
+    without the "right" class; librus-apix then gives the float 0.0 (I-003).
+    Librus never shows an average of 0 or less.
+    """
     try:
-        return float(str(value).replace(",", "."))
+        number = float(str(value).replace(",", "."))
     except ValueError:
         return None
+    return number if number > 0 else None
 
 
 def _tooltip(tag: Tag) -> dict[str, str]:
@@ -333,12 +341,15 @@ def overall(
 ) -> tuple[float | None, str | None, dict[str, float]]:
     """Return (GPA, source, subject averages) of a period (D-026).
 
-    GPA = plain mean of the subject averages; subjects without one are skipped.
+    GPA = plain mean of the subject averages; subjects without one and the
+    behaviour row (NOT_IN_GPA) are skipped.
     Source: "librus", "calculated" or "mixed", from the subject averages used.
     """
     averages: dict[str, float] = {}
     sources = set()
     for name, subject in page.subjects.items():
+        if name.strip().casefold() in NOT_IN_GPA:
+            continue
         value, source = period_average(subject, period, rules)
         if value is not None:
             averages[name] = value

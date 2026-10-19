@@ -13,7 +13,7 @@ from custom_components.librus_apix.const import (
     DOMAIN,
 )
 
-from .common import FakeGrade, FakeServer
+from .common import FakeGrade, FakeServer, FakeSubject
 
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
@@ -29,9 +29,11 @@ def _state(hass: HomeAssistant, entry: MockConfigEntry, key: str):
     return hass.states.get(entity_id)
 
 
-def _hide_averages(server: FakeServer) -> None:
+def _hide_averages(
+    server: FakeServer, hidden: tuple[str, str, str] | None = ("-", "-", "-")
+) -> None:
     for subject in server.subjects:
-        subject.averages = ("-", "-", "-")
+        subject.averages = hidden
 
 
 async def test_gpa_from_the_librus_averages(
@@ -54,11 +56,17 @@ async def test_gpa_from_the_librus_averages(
     }
 
 
+@pytest.mark.parametrize(
+    "hidden", [("-", "-", "-"), None], ids=["dash", "hidden by the school"]
+)
 async def test_gpa_calculated_when_librus_shows_none(
-    hass: HomeAssistant, mock_server: FakeServer, config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    mock_server: FakeServer,
+    config_entry: MockConfigEntry,
+    hidden: tuple[str, str, str] | None,
 ) -> None:
-    """Hidden averages: GPA of the calculated subject averages."""
-    _hide_averages(mock_server)
+    """Hidden averages: GPA of the calculated subject averages (I-003)."""
+    _hide_averages(mock_server, hidden)
 
     await _setup(hass, config_entry)
 
@@ -76,6 +84,42 @@ async def test_gpa_source_mixed(
     await _setup(hass, config_entry)
 
     assert _state(hass, config_entry, "gpa").attributes["average_source"] == "mixed"
+
+
+@pytest.mark.parametrize(
+    "behaviour",
+    [
+        FakeSubject(
+            "Zachowanie",
+            semester1=[FakeGrade(1701, "5")],
+            averages=("5.00", "-", "5.00"),
+        ),
+        FakeSubject(
+            "Zachowanie",
+            semester1=[
+                FakeGrade(1701, "+", weight=0, counts=False),
+                FakeGrade(1702, "6"),
+            ],
+            averages=None,
+        ),
+    ],
+    ids=["shown by Librus", "calculated"],
+)
+async def test_behaviour_is_not_in_the_gpa(
+    hass: HomeAssistant,
+    mock_server: FakeServer,
+    config_entry: MockConfigEntry,
+    behaviour: FakeSubject,
+) -> None:
+    """The "Zachowanie" row keeps its sensor but never counts (D-103)."""
+    mock_server.subjects.append(behaviour)
+
+    await _setup(hass, config_entry)
+
+    gpa = _state(hass, config_entry, "gpa")
+    assert float(gpa.state) == pytest.approx((3.69 + 4.0) / 2)
+    assert "Zachowanie" not in gpa.attributes["subjects"]
+    assert float(_state(hass, config_entry, "grades_zachowanie").state) > 4
 
 
 async def test_gpa_without_grades_is_unknown(

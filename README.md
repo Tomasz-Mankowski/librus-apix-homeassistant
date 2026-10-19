@@ -16,7 +16,7 @@ Karty do panelu (terminarz, wiadomości, ogłoszenia): [librus-apix-homeassistan
 - Oceny: jeden czujnik na przedmiot ze średnią, oceny śródroczne i roczne (także proponowane), oceny opisowe, średnia ogólna.
 - Wiadomości: ostatnie wiadomości odebrane (1–100). Treść jest czytana tylko na żądanie, bo Librus oznacza wtedy wiadomość jako przeczytaną.
 - Ogłoszenia: wszystkie ogłoszenia z pełną treścią.
-- Terminarz: kalendarz z godzinami lekcji dla bieżącego miesiąca i 0–6 kolejnych.
+- Terminarz: kalendarz z godzinami lekcji dla bieżącego miesiąca i 0–6 kolejnych, także zastępstwa i odwołane lekcje.
 - Wyzwalacze: nowa wiadomość, nowe ogłoszenie, nowa lub zmieniona ocena, ocena okresowa, nowa ocena opisowa, nowe lub zmienione wydarzenie w terminarzu.
 - Kilku uczniów: każdy uczeń to osobny wpis integracji z własnym urządzeniem i encjami.
 - Język polski i angielski (według języka Home Assistant).
@@ -86,7 +86,7 @@ Przykłady dotyczą uczennicy „Zofia Testowa” w Home Assistant po polsku. Id
 | Ogłoszenia | `sensor.zofia_testowa_ogloszenia` | liczba ogłoszeń | `announcements` (z pełną treścią) |
 | Terminarz | `calendar.zofia_testowa_terminarz` | kalendarz | opis wydarzenia: czytelne linie i jedna linia JSON ze wszystkimi polami |
 
-`average_source` mówi, skąd jest średnia: `librus` (pokazana w Librusie), `calculated` (policzona według ustawień) albo `mixed`.
+`average_source` mówi, skąd jest średnia: `librus` (pokazana w Librusie), `calculated` (policzona według ustawień) albo `mixed`. Gdy szkoła ukrywa średnie, integracja liczy je sama; przedmiot bez ocen liczbowych ma stan nieznany. Wiersz `Zachowanie` ma własny czujnik, ale nie wlicza się do średniej ocen.
 
 ## Wyzwalacze
 
@@ -112,6 +112,8 @@ Dane zdarzenia (atrybuty stanu encji zdarzeń):
 | `new_descriptive_grade` | `id`, `subject`, `semester`, `grade`, `date`, `teacher`, `content`, `description` |
 | `new_event` | `id`, `date`, `type`, `subject`, `teacher`, `lesson`, `hour`, `description`, `date_added`, `summary`, `start`, `end`, `all_day`, `details` |
 | `changed_event` | jak `new_event` oraz `old` (wartości przed zmianą) i `changed` (nazwy zmienionych pól) |
+
+Zastępstwo ma typ `Zastępstwo`, odwołana lekcja typ `Odwołane zajęcia`; `teacher` to nauczyciel podany przez Librusa, `subject` to przedmiot lekcji.
 
 Każde zdarzenie ma też `student` (imię i nazwisko ucznia) i `config_entry_id` (wpis integracji). Pierwszy odczyt po dodaniu integracji, restart i zmiana ustawień nie wywołują zdarzeń.
 
@@ -258,8 +260,8 @@ Home Assistant integration (HACS) that reads student data from Librus Synergia: 
 - **Requires:** Home Assistant 2026.3 or newer, HACS, a Librus Synergia login (one login = one student).
 - **Install:** HACS → **⋮** → **Custom repositories** → `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant`, type **Integration** → **Download** → restart Home Assistant. Then **Settings** → **Devices & services** → **Add integration** → **Librus APIX**, enter the login and password, keep the defaults. Add the integration once per student.
 - **Options:** poll interval per data type (student info 360 min, grades, messages and announcements 15 min, schedule 60 min; 10–1440 min), schedule months ahead (1, 0–6), number of messages (20, 1–100), average rules (weights, only counted grades, plus 0.5, minus 0.25).
-- **Entities** (English Home Assistant, student "Zofia Testowa"): `sensor.zofia_testowa_student`, `_class`, `_tutor`, `_school`, `_student_number`, `_lucky_number`, one sensor per subject (current-semester average), descriptive-grade sensors, `sensor.zofia_testowa_gpa`, `sensor.zofia_testowa_messages` (unread count, `messages` attribute), `sensor.zofia_testowa_announcements`, `calendar.zofia_testowa_schedule`. Entity IDs follow the Home Assistant language at setup.
-- **Triggers:** event entities `messages` (`new_message`), `announcements` (`new_announcement`), `grades` (`new_grade`, `grade_changed`, `final_grade`), `descriptive_grades` (`new_descriptive_grade`), `schedule` (`new_event`, `changed_event`). Every event carries `student` and `config_entry_id`. One event per new item; use `mode: queued`. The first poll, restarts and option changes fire nothing.
+- **Entities** (English Home Assistant, student "Zofia Testowa"): `sensor.zofia_testowa_student`, `_class`, `_tutor`, `_school`, `_student_number`, `_lucky_number`, one sensor per subject (current-semester average; calculated when the school hides averages), descriptive-grade sensors, `sensor.zofia_testowa_gpa` (behaviour, `Zachowanie`, not included), `sensor.zofia_testowa_messages` (unread count, `messages` attribute), `sensor.zofia_testowa_announcements`, `calendar.zofia_testowa_schedule`. Entity IDs follow the Home Assistant language at setup.
+- **Triggers:** event entities `messages` (`new_message`), `announcements` (`new_announcement`), `grades` (`new_grade`, `grade_changed`, `final_grade`), `descriptive_grades` (`new_descriptive_grade`), `schedule` (`new_event`, `changed_event`; substitutions and cancelled lessons have the types `Zastępstwo` and `Odwołane zajęcia`). Every event carries `student` and `config_entry_id`. One event per new item; use `mode: queued`. The first poll, restarts and option changes fire nothing.
 - **Notifications:** five blueprints in [`blueprints/automation/librus_apix`](blueprints/automation/librus_apix) (import buttons above), or your own automation as in the YAML example above.
 - **Action:** `librus_apix.get_message_content` (`entity_id`: messages sensor, `message_id`) returns the full message; Librus marks it read. The content is read once and kept.
 - **Cards:** [librus-apix-homeassistant-ui](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant-ui) for schedule, messages and announcements; standard cards for grades and student info (examples above).

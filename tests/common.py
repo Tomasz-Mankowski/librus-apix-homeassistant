@@ -187,7 +187,9 @@ class FakeSubject:
     teacher: str = "Adam Rachunek"
     semester1: list[FakeGrade] = field(default_factory=list)
     semester2: list[FakeGrade] = field(default_factory=list)
-    averages: tuple[str, str, str] = ("-", "-", "-")
+    # Librus texts of the average cells; None: the school hides averages, the
+    # cells are empty and have no "right" class (live test I-003).
+    averages: tuple[str, str, str] | None = ("-", "-", "-")
     finals: list[FakeFinal] = field(default_factory=list)
 
 
@@ -286,22 +288,27 @@ def _final_cell(subject: FakeSubject, column: str) -> str:
     return "".join(boxes) or "-"
 
 
+def _average_cell(average: str | None) -> str:
+    return "<td></td>" if average is None else f'<td class="right">{average}</td>'
+
+
 def grades_page(subjects: list[FakeSubject]) -> str:
     """Return the grades page like Synergia renders it."""
     rows = []
     for i, subject in enumerate(subjects):
+        averages = subject.averages or (None, None, None)
         cells = [
             '<td class="center micro screen-only"><img src="/t.png"></td>',
             f"<td>{subject.name}</td>",
         ]
         for grades, average, column in (
-            (subject.semester1, subject.averages[0], "I"),
-            (subject.semester2, subject.averages[1], "II"),
+            (subject.semester1, averages[0], "I"),
+            (subject.semester2, averages[1], "II"),
         ):
             cells.append(f"<td>{_grade_cell(grades, subject.teacher)}</td>")
-            cells.append(f'<td class="right">{average}</td>')
+            cells.append(_average_cell(average))
             cells.append(f'<td class="center">{_final_cell(subject, column)}</td>')
-        cells.append(f'<td class="right">{subject.averages[2]}</td>')
+        cells.append(_average_cell(averages[2]))
         cells.append(f'<td class="center">{_final_cell(subject, "R")}</td>')
         rows.append(f'<tr class="line{i % 2}">{"".join(cells)}</tr>')
         rows.append(f'<tr class="line{i % 2}" id="przedmioty_{i}_node"><td></td></tr>')
@@ -409,6 +416,9 @@ class FakeEvent:
     hour: str | None = None
     added: str = "2026-10-01 12:00:00"
     prefix: str = "szczegoly"
+    # "substitution" or "cancelled": a lesson change, a list text without a
+    # title or detail page (live test I-004); needs teacher, lesson and subject.
+    kind: str | None = None
 
     @property
     def href(self) -> str:
@@ -456,6 +466,9 @@ def schedule_page(events: list[FakeEvent], year: int, month: int) -> str:
         for e in events:
             if (e.day.year, e.day.month, e.day.day) != (year, month, number):
                 continue
+            if e.kind:
+                rows.append(f"<tr>{_lesson_change_cell(e)}</tr>")
+                continue
             title = (
                 f"Nauczyciel: {e.teacher}<br />Opis: {e.description}"
                 f"<br />Data dodania: {e.added}"
@@ -476,6 +489,17 @@ def schedule_page(events: list[FakeEvent], year: int, month: int) -> str:
             f"<table><tbody>{''.join(rows)}</tbody></table></div>"
         )
     return "".join(days)
+
+
+def _lesson_change_cell(event: FakeEvent) -> str:
+    """A substitution or cancelled lesson like Synergia renders it."""
+    text = f"{event.teacher} na lekcji nr: {event.lesson} ({event.subject})"
+    if event.kind == "substitution":
+        text = f"Zastępstwo z {text}"
+    else:
+        text = f"Odwołane zajęcia <br/>{text}"
+    padding = "\n" + " " * 28
+    return f'<td style="background-color: #6A9604; ">{padding}{text}{padding}</td>'
 
 
 def event_page(event: FakeEvent) -> str:

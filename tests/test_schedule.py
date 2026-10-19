@@ -286,3 +286,113 @@ async def test_broken_detail_page_keeps_the_event(
     ]
     assert test["summary"] == "Sprawdzian: Matematyka"
     assert parse_description(test["description"])["details"] == {}
+
+
+async def test_lesson_changes_without_a_detail_page(
+    hass: HomeAssistant, mock_server: FakeServer, config_entry: MockConfigEntry
+) -> None:
+    """Substitution and cancelled lesson: type, subject, teacher, lesson times (I-004)."""
+    mock_server.events += [
+        FakeEvent(
+            0,
+            date(2026, 10, 22),
+            "",
+            "Anna Zastępcza",
+            subject="Informatyka",
+            lesson=2,
+            kind="substitution",
+        ),
+        FakeEvent(
+            0,
+            date(2026, 10, 26),
+            "",
+            "Jan Nieobecny",
+            subject="Edukacja wczesnoszkolna",
+            lesson=3,
+            kind="cancelled",
+        ),
+    ]
+    entity_id = await _setup(hass, config_entry)
+
+    events = {e["summary"]: e for e in await _events(hass, entity_id)}
+    substitution = events["Zastępstwo: Informatyka"]
+    cancelled = events["Odwołane zajęcia: Edukacja wczesnoszkolna"]
+    assert substitution["start"] == "2026-10-22T08:55:00+02:00"
+    assert cancelled["start"] == "2026-10-26T09:50:00+01:00"
+    assert substitution["description"].splitlines()[:-1] == [
+        "Rodzaj: Zastępstwo",
+        "Przedmiot: Informatyka",
+        "Nauczyciel: Anna Zastępcza",
+    ]
+    fields = parse_description(cancelled["description"])
+    assert {
+        k: fields[k] for k in ("type", "subject", "teacher", "lesson", "details")
+    } == {
+        "type": "Odwołane zajęcia",
+        "subject": "Edukacja wczesnoszkolna",
+        "teacher": "Jan Nieobecny",
+        "lesson": 3,
+        "details": {},
+    }
+    assert _detail_requests(mock_server) == 5
+
+
+@pytest.mark.parametrize(
+    ("list_subject", "list_title", "expected"),
+    [
+        (
+            "Zastępstwo z Anna Zastępcza na lekcji nr: 10 (Język polski)",
+            "Zastępstwo z Anna Zastępcza na lekcji nr: 10 (Język polski)",
+            ("Zastępstwo", "Język polski", "Anna Zastępcza"),
+        ),
+        (
+            "Odwołane zajęcia",
+            "Jan Nieobecny na lekcji nr: 5 (Wychowanie fizyczne (chłopcy))",
+            ("Odwołane zajęcia", "Wychowanie fizyczne (chłopcy)", "Jan Nieobecny"),
+        ),
+        (
+            "Jan Nieobecny na lekcji nr: 5 (Informatyka)",
+            "Jan Nieobecny na lekcji nr: 5 (Informatyka)",
+            ("Jan Nieobecny na lekcji nr: 5 (Informatyka)", "", ""),
+        ),
+        (
+            "Matematyka",
+            "Sprawdzian na lekcji nr: 5",
+            ("Sprawdzian na lekcji nr: 5", "Matematyka", ""),
+        ),
+    ],
+    ids=["substitution", "cancelled", "no kind: as listed", "no pattern"],
+)
+def test_lesson_change_from_the_list_text(
+    list_subject: str, list_title: str, expected: tuple[str, str, str]
+) -> None:
+    """Only the Librus patterns of lesson changes are split (D-104)."""
+    event = _event(list_subject=list_subject, list_title=list_title, data={})
+
+    assert (event.type, event.subject, event.teacher) == expected
+
+
+def test_a_detail_page_wins_over_the_list_text() -> None:
+    """With a detail page the list text is not parsed."""
+    event = _event(
+        list_title="Zastępstwo z Anna Zastępcza na lekcji nr: 1 (Fizyka)",
+        detail={
+            "Rodzaj": "Sprawdzian",
+            "Przedmiot": "Fizyka",
+            "Nauczyciel": "Adam Rachunek",
+        },
+    )
+
+    assert (event.type, event.subject, event.teacher) == (
+        "Sprawdzian",
+        "Fizyka",
+        "Adam Rachunek",
+    )
+
+
+def test_without_a_detail_page_and_subject_only_the_type_line() -> None:
+    """No subject and no teacher: just the type, then the JSON line."""
+    event = _event(list_subject="Wycieczka", list_title="Wycieczka", data={})
+
+    assert describe(event).splitlines()[0] == "Rodzaj: Wycieczka"
+    assert len(describe(event).splitlines()) == 2

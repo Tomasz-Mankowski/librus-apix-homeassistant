@@ -32,6 +32,14 @@ JSON_KEY = "librus_apix"
 JSON_VERSION = 1
 _HOUR = re.compile(r"(\d{1,2}):(\d{2})")
 _UNKNOWN = "unknown"
+# Lesson changes have no detail page, only a list text (I-004):
+#   "Zastępstwo z <teacher> na lekcji nr: 5 (<subject>)"
+#   "Odwołane zajęcia <br/><teacher> na lekcji nr: 5 (<subject>)": the part
+#   before <br/> is the list subject, the rest the list title.
+SUBSTITUTION = "Zastępstwo"
+_LESSON_CHANGE = re.compile(
+    rf"(?:(?P<kind>{SUBSTITUTION}) z )?(?P<teacher>.+?) na lekcji nr: ?\d+ \((?P<subject>.+)\)"
+)
 # Fields whose change fires changed_event ("date_added" and "details" do not).
 SNAPSHOT_FIELDS = (
     "date",
@@ -63,9 +71,26 @@ class ScheduleEvent:
         value = self.detail.get(detail_key) or self.data.get(data_key or detail_key, "")
         return "" if value == _UNKNOWN else value.strip()
 
+    def _change(self) -> tuple[str, str, str] | None:
+        """(type, teacher, subject) of a substitution or cancelled lesson."""
+        if "Rodzaj" in self.detail:
+            return None
+        match = _LESSON_CHANGE.fullmatch(self.list_title)
+        if match is None:
+            return None
+        if match["kind"]:
+            kind = match["kind"]
+        elif self.list_subject and self.list_subject != self.list_title:
+            kind = self.list_subject
+        else:
+            return None
+        return kind, match["teacher"].strip(), match["subject"].strip()
+
     @property
     def type(self) -> str:
-        """Event type, for example Sprawdzian or Wycieczka."""
+        """Event type, for example Sprawdzian, Wycieczka or Zastępstwo."""
+        if change := self._change():
+            return change[0]
         return self._field("Rodzaj") or self.list_title
 
     @property
@@ -73,12 +98,17 @@ class ScheduleEvent:
         """Subject; empty for events without one."""
         if "Rodzaj" in self.detail:
             return self.detail.get("Przedmiot", "").strip()
+        if change := self._change():
+            return change[2]
         return self.list_subject if self.list_subject != self.list_title else ""
 
     @property
     def teacher(self) -> str:
-        """Teacher who added the event."""
-        return self._field("Nauczyciel")
+        """Teacher who added the event; of a lesson change, the one Librus names (D-104)."""
+        if teacher := self._field("Nauczyciel"):
+            return teacher
+        change = self._change()
+        return change[1] if change else ""
 
     @property
     def description(self) -> str:
@@ -254,6 +284,10 @@ def describe(event: ScheduleEvent) -> str:
     if not lines:
         lines = [f"Rodzaj: {event.type}"]
         lines += [f"{key}: {value}" for key, value in event.data.items()]
+        if event.subject:
+            lines.append(f"Przedmiot: {event.subject}")
+        if event.teacher and "Nauczyciel" not in event.data:
+            lines.append(f"Nauczyciel: {event.teacher}")
     payload = {JSON_KEY: JSON_VERSION, **event_fields(event)}
     lines.append(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return "\n".join(lines)
