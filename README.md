@@ -1,4 +1,4 @@
-# Librus APIX dla Home Assistant
+# `librus-apix-homeassistant` - Librus dla Home Assistant
 
 Integracja [HACS](https://hacs.xyz/) dla Home Assistant. Odczytuje dane ucznia z Librus Synergia (oceny, wiadomości, ogłoszenia, terminarz) i udostępnia je jako encje oraz wyzwalacze automatyzacji.
 
