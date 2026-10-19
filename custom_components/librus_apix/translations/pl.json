@@ -126,6 +126,14 @@
             "name": "Wiadomości"
           }
         }
+      },
+      "announcements": {
+        "name": "Ogłoszenia",
+        "state_attributes": {
+          "announcements": {
+            "name": "Ogłoszenia"
+          }
+        }
       }
     },
     "event": {
@@ -135,6 +143,16 @@
           "event_type": {
             "state": {
               "new_message": "Nowa wiadomość"
+            }
+          }
+        }
+      },
+      "announcements": {
+        "name": "Ogłoszenia",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_announcement": "Nowe ogłoszenie"
             }
           }
         }

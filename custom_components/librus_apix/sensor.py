@@ -12,13 +12,16 @@ from homeassistant.helpers.typing import StateType
 from librus_apix.student_information import StudentInformation
 
 from .coordinator import (
+    AnnouncementsCoordinator,
     LibrusConfigEntry,
     MessagesCoordinator,
     StudentInfoCoordinator,
+    announcement_details,
     message_details,
 )
 from .entity import LibrusEntity
 
+ATTR_ANNOUNCEMENTS = "announcements"
 ATTR_MESSAGES = "messages"
 
 # Coordinators fetch the data; entities never poll.
@@ -78,6 +81,7 @@ async def async_setup_entry(
         [
             *(StudentSensor(data.student, desc) for desc in STUDENT_SENSORS),
             MessagesSensor(data.messages),
+            AnnouncementsSensor(data.announcements),
         ]
     )
 
@@ -119,5 +123,35 @@ class MessagesSensor(LibrusEntity[MessagesCoordinator], SensorEntity):
             ATTR_MESSAGES: [
                 {**details, "content_cached": details["id"] in bodies}
                 for details in map(message_details, self.coordinator.data.messages)
+            ]
+        }
+
+
+class AnnouncementsSensor(LibrusEntity[AnnouncementsCoordinator], SensorEntity):
+    """Number of announcements; all of them with the full text as an attribute."""
+
+    # The texts can be long: keep them out of the recorder (16 KB attribute limit).
+    _unrecorded_attributes = frozenset({ATTR_ANNOUNCEMENTS})
+
+    def __init__(self, coordinator: AnnouncementsCoordinator) -> None:
+        """Create the announcements sensor."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(
+                key="announcements", translation_key="announcements"
+            ),
+        )
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of announcements."""
+        return len(self.coordinator.data.announcements)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return all announcements."""
+        return {
+            ATTR_ANNOUNCEMENTS: [
+                announcement_details(a) for a in self.coordinator.data.announcements
             ]
         }

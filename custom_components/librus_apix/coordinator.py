@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import hashlib
 import logging
 import re
 from typing import Any
@@ -13,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from librus_apix.announcements import Announcement, get_announcements
 from librus_apix.client import Client
 from librus_apix.exceptions import ParseError
 from librus_apix.messages import Message, get_received, parse, unwrap_message_data
@@ -20,6 +22,7 @@ from librus_apix.student_information import StudentInformation, get_student_info
 
 from .api import LibrusApi
 from .const import (
+    CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_STUDENT,
     CONF_MESSAGE_COUNT,
@@ -47,6 +50,7 @@ class LibrusData:
     store: LibrusStore
     student: StudentInfoCoordinator
     messages: MessagesCoordinator
+    announcements: AnnouncementsCoordinator
 
 
 type LibrusConfigEntry = ConfigEntry[LibrusData]
@@ -259,3 +263,51 @@ class MessagesCoordinator(LibrusCoordinator[MessagesData]):
             message.unread = False
             self.async_update_listeners()
         return {"id": msg_id, **self.bodies[msg_id]}
+
+
+def announcement_id(item: Announcement) -> str:
+    """Stable id of an announcement: the library gives none (D-029)."""
+    key = f"{item.title.strip()}|{item.author.strip()}|{item.date.strip()}"
+    return hashlib.sha1(key.encode()).hexdigest()[:16]
+
+
+def announcement_details(item: Announcement) -> dict[str, Any]:
+    """All details of an announcement, with the full text."""
+    return {
+        "id": announcement_id(item),
+        "title": item.title.strip(),
+        "author": item.author.strip(),
+        "date": item.date.strip(),
+        "content": item.description.strip(),
+    }
+
+
+@dataclass
+class AnnouncementsData:
+    """All announcements and the new ones of this poll."""
+
+    announcements: list[Announcement]
+    changes: list[Change[Announcement]]
+
+
+class AnnouncementsCoordinator(LibrusCoordinator[AnnouncementsData]):
+    """All announcements with the full text (Librus has no read state for them)."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: LibrusConfigEntry,
+        api: LibrusApi,
+        store: LibrusStore,
+    ) -> None:
+        """Use the announcements interval."""
+        super().__init__(hass, entry, api, "announcements", CONF_INTERVAL_ANNOUNCEMENTS)
+        self._tracker: Tracker[Announcement] = Tracker(store, "announcements")
+
+    async def _async_fetch(self) -> AnnouncementsData:
+        announcements = await self.api.async_call(get_announcements)
+        # Librus lists the newest first; events go oldest first.
+        changes = self._tracker.update(
+            TrackedItem(announcement_id(a), {}, a) for a in reversed(announcements)
+        )
+        return AnnouncementsData(announcements, changes)

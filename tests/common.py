@@ -110,16 +110,63 @@ def messages_page(messages: list[FakeMessage], page: int) -> str:
 
 
 @dataclass
+class FakeAnnouncement:
+    """An announcement on the announcements page."""
+
+    title: str
+    author: str
+    date: str
+    content: str
+
+
+def default_announcements() -> list[FakeAnnouncement]:
+    """Three announcements, newest first."""
+    return [
+        FakeAnnouncement(
+            "Zebrania z rodzicami",
+            "Dyrektor Szkoły",
+            "2026-10-16",
+            "Zebrania odbędą się w środę o 17:00.\nSale według listy.",
+        ),
+        FakeAnnouncement("Zbiórka makulatury", "Samorząd", "2026-10-09", "Do końca."),
+        FakeAnnouncement("Szczepienia", "Pielęgniarka", "2026-09-28", "Klasy piąte."),
+    ]
+
+
+def announcements_page(items: list[FakeAnnouncement]) -> str:
+    """Return the announcements page (or the 'no announcements' box)."""
+    if not items:
+        return (
+            '<div class="container border-red resizeable center"><div>'
+            "<p>Brak ogłoszeń.</p></div></div>"
+        )
+    return "".join(
+        '<table class="decorated big center printable margin-top">'
+        f'<thead><tr><td colspan="2">{a.title}</td></tr></thead><tbody>'
+        f'<tr class="line0"><th>Dodał</th><td>{a.author}</td></tr>'
+        f'<tr class="line1"><th>Data publikacji</th><td>{a.date}</td></tr>'
+        f'<tr class="line0"><th>Treść</th><td>{a.content}</td></tr>'
+        "</tbody></table>"
+        for a in items
+    )
+
+
+@dataclass
 class FakeServer:
     """Synergia pages of one student, served through requests-mock."""
 
     mocker: rm.Mocker
     messages: list[FakeMessage] = field(default_factory=default_messages)
+    announcements: list[FakeAnnouncement] = field(default_factory=default_announcements)
     lucky: str | None = "7"
 
     def __post_init__(self) -> None:
         """Register the pages."""
         self.mocker.get(f"{MOCK_URL}/informacja", text=self._info)
+        self.mocker.get(
+            f"{MOCK_URL}/ogloszenia",
+            text=lambda request, context: announcements_page(self.announcements),
+        )
         self.mocker.get(f"{MOCK_URL}/wiadomosci/1/5", text=self._messages)
         self.mocker.post(f"{MOCK_URL}/wiadomosci/1/5", text=self._messages)
         self.mocker.get(

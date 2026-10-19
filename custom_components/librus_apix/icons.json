@@ -21,11 +21,17 @@
       },
       "messages": {
         "default": "mdi:email-outline"
+      },
+      "announcements": {
+        "default": "mdi:bullhorn-outline"
       }
     },
     "event": {
       "messages": {
         "default": "mdi:email-alert-outline"
+      },
+      "announcements": {
+        "default": "mdi:bullhorn"
       }
     }
   },

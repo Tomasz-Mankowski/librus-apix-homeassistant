@@ -19,7 +19,7 @@ from .common import MOCK_URL, FakeServer
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> str:
     """Set up the entry; return the messages sensor id."""
     await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     entity_id = er.async_get(hass).async_get_entity_id(
         "sensor", DOMAIN, f"{entry.entry_id}_messages"
     )
@@ -83,7 +83,7 @@ async def test_read_message_is_marked_read_and_cached(
     assert hass.states.get(entity_id).state == "2"
 
     await _get(hass, entity_id, "5001")
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert _listed(hass, entity_id, "5001")["unread"] is False
     assert _listed(hass, entity_id, "5001")["content_cached"] is True
@@ -97,7 +97,7 @@ async def test_cache_survives_a_reload_and_is_pruned(
     entity_id = await _setup(hass, config_entry)
     await _get(hass, entity_id, "5008")
     assert await hass.config_entries.async_reload(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     await _get(hass, entity_id, "5008")
     assert mock_server.paths().count("/wiadomosci/1/5/5008") == 1

@@ -275,7 +275,7 @@ async def _loaded_entry(hass: HomeAssistant, **options: int) -> MockConfigEntry:
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     return entry
 
 
@@ -295,7 +295,7 @@ async def test_reauth_updates_the_password_and_reloads(
         result["flow_id"],
         {CONF_USERNAME: " Zofia.Testowa ", CONF_PASSWORD: "new"},
     )
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
@@ -365,7 +365,7 @@ async def test_options_show_current_values_and_saving_reloads(
         result["flow_id"],
         {**entry.options, CONF_INTERVAL_MESSAGES: 45, CONF_MESSAGE_COUNT: 50},
     )
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_INTERVAL_MESSAGES] == 45

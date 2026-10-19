@@ -10,6 +10,7 @@ from homeassistant.helpers.typing import ConfigType
 from .api import LibrusApi
 from .const import CONF_SERVER_URL, DOMAIN
 from .coordinator import (
+    AnnouncementsCoordinator,
     LibrusConfigEntry,
     LibrusData,
     MessagesCoordinator,
@@ -54,9 +55,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bo
         store=store,
         student=student,
         messages=MessagesCoordinator(hass, entry, api, store),
+        announcements=AnnouncementsCoordinator(hass, entry, api, store),
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    for coordinator in (entry.runtime_data.messages,):
+    data = entry.runtime_data
+    for coordinator in (data.messages, data.announcements):
         entry.async_create_background_task(
             hass, coordinator.async_refresh(), f"{coordinator.name} first refresh"
         )

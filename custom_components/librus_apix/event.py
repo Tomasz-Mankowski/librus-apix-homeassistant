@@ -13,10 +13,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import (
+    AnnouncementsCoordinator,
+    AnnouncementsData,
     LibrusConfigEntry,
     LibrusCoordinator,
     MessagesCoordinator,
     MessagesData,
+    announcement_details,
     message_details,
 )
 from .entity import LibrusEntity
@@ -24,6 +27,7 @@ from .entity import LibrusEntity
 ATTR_STUDENT = "student"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 
+EVENT_NEW_ANNOUNCEMENT = "new_announcement"
 EVENT_NEW_MESSAGE = "new_message"
 
 # Coordinators fetch the data; entities never poll.
@@ -36,7 +40,10 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add the event entities of the student."""
-    async_add_entities([MessagesEvent(entry.runtime_data.messages)])
+    data = entry.runtime_data
+    async_add_entities(
+        [MessagesEvent(data.messages), AnnouncementsEvent(data.announcements)]
+    )
 
 
 class LibrusEventEntity[C: LibrusCoordinator[Any]](LibrusEntity[C], EventEntity):
@@ -98,6 +105,31 @@ class MessagesEvent(LibrusEventEntity[MessagesCoordinator]):
     def _events(self, data: MessagesData) -> Iterable[tuple[str, dict[str, Any]]]:
         return [
             (EVENT_NEW_MESSAGE, message_details(change.item))
+            for change in data.changes
+            if change.kind == "new"
+        ]
+
+
+class AnnouncementsEvent(LibrusEventEntity[AnnouncementsCoordinator]):
+    """new_announcement for each new announcement, with the full text."""
+
+    # The text can be long: keep it out of the recorder.
+    _unrecorded_attributes = frozenset({"content"})
+
+    def __init__(self, coordinator: AnnouncementsCoordinator) -> None:
+        """Create the announcements event entity."""
+        super().__init__(
+            coordinator,
+            EventEntityDescription(
+                key="announcements",
+                translation_key="announcements",
+                event_types=[EVENT_NEW_ANNOUNCEMENT],
+            ),
+        )
+
+    def _events(self, data: AnnouncementsData) -> Iterable[tuple[str, dict[str, Any]]]:
+        return [
+            (EVENT_NEW_ANNOUNCEMENT, announcement_details(change.item))
             for change in data.changes
             if change.kind == "new"
         ]

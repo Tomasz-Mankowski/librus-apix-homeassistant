@@ -36,7 +36,7 @@ from .common import (
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
 
 def _entity_id(hass: HomeAssistant, entry: MockConfigEntry, domain: str) -> str:
@@ -114,7 +114,8 @@ async def test_no_message_body_is_requested(
     await _setup(hass, config_entry)
     await config_entry.runtime_data.messages.async_refresh()
 
-    assert set(mock_server.paths()) == {"/informacja", "/wiadomosci/1/5"}
+    assert "/wiadomosci/1/5" in mock_server.paths()
+    assert not [p for p in mock_server.paths() if p.startswith("/wiadomosci/1/5/")]
 
 
 async def test_new_messages_fire_one_event_each_in_time_order(
@@ -132,7 +133,7 @@ async def test_new_messages_fire_one_event_each_in_time_order(
         FakeMessage(6001, "Dyrektor", "A", "2026-10-19 10:00:00", attachment=True),
     ]
     await config_entry.runtime_data.messages.async_refresh()
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     fired = _fired(hass, events, event_id)
     assert [(f[ATTR_EVENT_TYPE], f["id"]) for f in fired] == [

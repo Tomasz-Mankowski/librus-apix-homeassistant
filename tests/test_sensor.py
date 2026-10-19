@@ -25,7 +25,7 @@ async def test_no_lucky_number_is_unknown(
     requests_mock.get(f"{MOCK_URL}/informacja", text=info_page(lucky=None))
 
     await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert _state(hass, config_entry, "lucky_number") == STATE_UNKNOWN
 
@@ -37,7 +37,7 @@ async def test_long_school_name_is_cut_to_the_state_limit(
     requests_mock.get(f"{MOCK_URL}/informacja", text=info_page(school="S" * 300))
 
     await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert _state(hass, config_entry, "school") == "S" * 255
 
@@ -51,10 +51,10 @@ async def test_values_follow_the_coordinator(
         [{"text": info_page(lucky="7")}, {"text": info_page(lucky="21")}],
     )
     await hass.config_entries.async_setup(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert _state(hass, config_entry, "lucky_number") == "7"
 
     await config_entry.runtime_data.student.async_refresh()
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert _state(hass, config_entry, "lucky_number") == "21"

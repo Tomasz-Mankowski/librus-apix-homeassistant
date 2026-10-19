@@ -31,7 +31,7 @@ EXPECTED = {
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
     await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
 
 def _entity_id(hass: HomeAssistant, entry: MockConfigEntry, key: str) -> str:
@@ -63,7 +63,7 @@ async def test_setup_creates_one_device_with_its_entities(
         er.async_get(hass), config_entry.entry_id
     )
     assert sorted(entity.unique_id.split("_", 1)[1] for entity in entities) == sorted(
-        [*EXPECTED, "messages", "messages"]
+        [*EXPECTED, "messages", "messages", "announcements", "announcements"]
     )
     assert {entity.device_id for entity in entities} == {device.id}
     for key, (name, _, value) in EXPECTED.items():
@@ -113,11 +113,11 @@ async def test_unload_and_reload(
             er.async_get(hass), config_entry.entry_id
         )
     }
-    assert len(entity_ids) == 8
+    assert len(entity_ids) == 10
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)
-        await hass.async_block_till_done()
+        await hass.async_block_till_done(wait_background_tasks=True)
     assert config_entry.state is ConfigEntryState.NOT_LOADED
     close.assert_called_once()
     for entity_id in entity_ids:
@@ -180,7 +180,7 @@ async def test_store_is_loaded_and_removed_with_the_entry(
     assert config_entry.runtime_data.store.data["seen"] == {"a": [1]}
 
     await hass.config_entries.async_remove(config_entry.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert key not in hass_storage
 
 

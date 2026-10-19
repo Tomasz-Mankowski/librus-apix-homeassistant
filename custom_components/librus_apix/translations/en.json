@@ -126,6 +126,14 @@
             "name": "Messages"
           }
         }
+      },
+      "announcements": {
+        "name": "Announcements",
+        "state_attributes": {
+          "announcements": {
+            "name": "Announcements"
+          }
+        }
       }
     },
     "event": {
@@ -135,6 +143,16 @@
           "event_type": {
             "state": {
               "new_message": "New message"
+            }
+          }
+        }
+      },
+      "announcements": {
+        "name": "Announcements",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_announcement": "New announcement"
             }
           }
         }
