@@ -8,7 +8,7 @@ Integracja [HACS](https://hacs.xyz/) dla Home Assistant. Odczytuje dane ucznia z
 Karty do panelu (terminarz, wiadomości, ogłoszenia): [librus-apix-homeassistant-ui](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant-ui).
 
 > [!NOTE]
-> Wersja przedpremierowa 0.1.0. Integracja jest przetestowana z symulatorem Librusa. Błędy zgłaszaj w [Issues](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/issues).
+> Wersja 1.0.0, przetestowana z symulatorem Librusa i z prawdziwym kontem Librus Synergia. Zmiany: [CHANGELOG](CHANGELOG.md). Błędy zgłaszaj w [Issues](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/issues).
 
 ## Co potrafi
 
@@ -256,7 +256,7 @@ Home Assistant integration (HACS) that reads student data from Librus Synergia: 
 > [!IMPORTANT]
 > Unofficial project, not affiliated with or endorsed by Librus.
 
-- **Status:** pre-release 0.1.0, tested with a Librus simulator.
+- **Status:** 1.0.0, tested with a Librus simulator and a real Librus Synergia account; changes in [CHANGELOG](CHANGELOG.md).
 - **Requires:** Home Assistant 2026.3 or newer, HACS, a Librus Synergia login (one login = one student).
 - **Install:** HACS → **⋮** → **Custom repositories** → `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant`, type **Integration** → **Download** → restart Home Assistant. Then **Settings** → **Devices & services** → **Add integration** → **Librus APIX**, enter the login and password, keep the defaults. Add the integration once per student.
 - **Options:** poll interval per data type (student info 360 min, grades, messages and announcements 15 min, schedule 60 min; 10–1440 min), schedule months ahead (1, 0–6), number of messages (20, 1–100), average rules (weights, only counted grades, plus 0.5, minus 0.25).
