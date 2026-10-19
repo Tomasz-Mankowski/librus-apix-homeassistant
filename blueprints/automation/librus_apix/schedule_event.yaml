@@ -1,0 +1,145 @@
+blueprint:
+  name: Librus APIX - schedule notification
+  description: >-
+    Sends one notification for each new or changed event in the Librus schedule
+    (tests, trips, meetings) of the chosen students. One poll can bring several
+    events: the automation runs in queued mode, so every event gets its own
+    notification.
+
+
+    The texts can use `{{ student }}` and `{{ event.<field> }}`.
+    Fields: `id`, `date`, `type`, `subject`, `teacher`, `lesson`, `hour`,
+    `description`, `date_added`, `summary`, `start`, `end`, `all_day`,
+    `details`; `changed_event` also `old` (values before) and `changed` (names
+    of the changed fields).
+  domain: automation
+  author: Tomasz Mańkowski
+  source_url: https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/schedule_event.yaml
+  homeassistant:
+    min_version: "2026.3.0"
+  input:
+    source:
+      name: Students
+      icon: mdi:account-school
+      input:
+        event_entities:
+          name: Schedule event entities
+          description: The "Schedule" event entity of each student (one per Librus entry).
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: librus_apix
+                  domain: event
+        event_types:
+          name: Events
+          default:
+            - new_event
+            - changed_event
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: New event
+                  value: new_event
+                - label: Changed event (for example a new date)
+                  value: changed_event
+    texts:
+      name: Notification text
+      icon: mdi:text
+      collapsed: true
+      input:
+        title:
+          name: Title
+          default: >-
+            {{ student }}: {{ 'nowe wydarzenie' if event.event_type ==
+            'new_event' else 'zmiana w terminarzu' }}
+          selector:
+            text: {}
+        message:
+          name: Message
+          default: >-
+            {{ event.summary }}, {{ event.date }}{{ ', lekcja ' ~ event.lesson
+            if event.get('lesson') }}{{ ', godz. ' ~ event.hour if
+            event.get('hour') }}{{ ' (było: ' ~ event.old.date ~ ')' if 'date'
+            in event.get('changed', []) }}
+          selector:
+            text:
+              multiline: true
+    delivery:
+      name: Delivery
+      icon: mdi:bell-ring
+      input:
+        persistent:
+          name: Home Assistant notification
+          description: Show the notification in the Home Assistant notification panel.
+          default: true
+          selector:
+            boolean: {}
+        notify_targets:
+          name: Notify entities
+          description: Optional notify entities that also get the notification.
+          default: {}
+          selector:
+            target:
+              entity:
+                domain: notify
+        extra_actions:
+          name: Other actions
+          description: >-
+            Optional actions for each event, for example a mobile app
+            notification. Variables: title, message, student, event.
+          default: []
+          selector:
+            action: {}
+
+mode: queued
+max: 50
+
+triggers:
+  # No from/to: two events within one millisecond differ only in attributes.
+  - trigger: state
+    entity_id: !input event_entities
+
+variables:
+  event_types: !input event_types
+  event: "{{ trigger.to_state.attributes if trigger.to_state else {} }}"
+  student: "{{ event.get('student', '') }}"
+  persistent: !input persistent
+  notify_targets: !input notify_targets
+
+conditions:
+  # A new schedule event only: not a restored state after a restart or reload.
+  - condition: template
+    value_template: >-
+      {{ trigger.from_state is not none
+         and trigger.from_state.state != 'unavailable'
+         and trigger.to_state is not none
+         and trigger.to_state.state not in ['unavailable', 'unknown']
+         and event.get('event_type') in event_types }}
+
+actions:
+  # The texts are rendered here, after the condition, so a restored state
+  # without event fields never renders them.
+  - variables:
+      title: !input title
+      message: !input message
+  - if:
+      - condition: template
+        value_template: "{{ persistent }}"
+    then:
+      - action: persistent_notification.create
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+  - if:
+      - condition: template
+        value_template: "{{ notify_targets.values() | select | list | count > 0 }}"
+    then:
+      - action: notify.send_message
+        target: !input notify_targets
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+  - choose: []
+    default: !input extra_actions
