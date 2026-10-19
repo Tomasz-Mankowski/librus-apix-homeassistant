@@ -1,6 +1,8 @@
 """Shared test data: a fake Synergia server for requests-mock."""
 
+import calendar
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 import html
 import re
 from typing import Any
@@ -376,6 +378,126 @@ def new_schema_table(subjects: dict[int, str]) -> str:
     return f'<table class="newSchemaGradesByStudentTable">{rows}</table>'
 
 
+BELLS = {1: ("08:00", "08:45"), 2: ("08:55", "09:40"), 3: ("09:50", "10:35")}
+
+
+def timetable_page(bells: dict[int, tuple[str, str]], monday: date) -> str:
+    """Return the timetable of one week (only the lesson times matter here)."""
+    rows = []
+    for number, (start, end) in bells.items():
+        cells = "".join(
+            '<td id="timetableEntryBox" class="line1" '
+            f'data-date="{monday + timedelta(days=d)}" data-date_from="{start}" '
+            f'data-date_to="{end}"></td>'
+            for d in range(7)
+        )
+        rows.append(f'<tr class="line1"><td class="center">{number}</td>{cells}</tr>')
+    return f'<table class="decorated plan-lekcji">{"".join(rows)}</table>'
+
+
+@dataclass
+class FakeEvent:
+    """A schedule event; ``day`` is its date."""
+
+    id: int
+    day: date
+    type: str
+    teacher: str = "Adam Rachunek"
+    description: str = ""
+    subject: str = ""
+    lesson: int | None = None
+    hour: str | None = None
+    added: str = "2026-10-01 12:00:00"
+    prefix: str = "szczegoly"
+
+    @property
+    def href(self) -> str:
+        """Detail page path."""
+        return f"/terminarz/{self.prefix}/{self.id}"
+
+
+def default_events() -> list[FakeEvent]:
+    """Events of October to December 2026 (tests freeze time at 2026-10-19)."""
+    return [
+        FakeEvent(
+            3003,
+            date(2026, 10, 21),
+            "Sprawdzian",
+            description="Ułamki zwykłe",
+            subject="Matematyka",
+            lesson=3,
+        ),
+        FakeEvent(3005, date(2026, 10, 23), "Wycieczka", description="Muzeum Techniki"),
+        FakeEvent(3007, date(2026, 10, 28), "Zebranie z rodzicami", hour="17:00"),
+        FakeEvent(
+            3008,
+            date(2026, 11, 4),
+            "Klasówka",
+            description="Średniowiecze",
+            subject="Historia",
+            lesson=2,
+        ),
+        FakeEvent(
+            3009,
+            date(2026, 11, 5),
+            "Dzień wolny",
+            description="Wolne",
+            prefix="szczegoly_wolne",
+        ),
+        FakeEvent(3013, date(2026, 12, 2), "Kartkówka", subject="Przyroda", lesson=9),
+    ]
+
+
+def schedule_page(events: list[FakeEvent], year: int, month: int) -> str:
+    """Return the calendar of one month."""
+    days = []
+    for number in range(1, calendar.monthrange(year, month)[1] + 1):
+        rows = []
+        for e in events:
+            if (e.day.year, e.day.month, e.day.day) != (year, month, number):
+                continue
+            title = (
+                f"Nauczyciel: {e.teacher}<br />Opis: {e.description}"
+                f"<br />Data dodania: {e.added}"
+            )
+            text = f"Nr lekcji: {e.lesson}<br />" if e.lesson else ""
+            if e.subject:
+                text += f'<span class="przedmiot">{e.subject}</span>, '
+            text += e.type
+            if e.hour:
+                text += f"<br />godz. {e.hour}"
+            rows.append(
+                f'<tr><td title="{html.escape(title)}" '
+                f"onclick=\"location.href='{e.href}'\">{text}</td></tr>"
+            )
+        days.append(
+            '<div class="kalendarz-dzien">'
+            f'<div class="kalendarz-numer-dnia">{number}</div>'
+            f"<table><tbody>{''.join(rows)}</tbody></table></div>"
+        )
+    return "".join(days)
+
+
+def event_page(event: FakeEvent) -> str:
+    """Return the detail page of one event."""
+    rows = [("Data", event.day.isoformat())]
+    if event.lesson:
+        rows.append(("Nr lekcji", str(event.lesson)))
+    rows.append(("Rodzaj", event.type))
+    if event.subject:
+        rows.append(("Przedmiot", event.subject))
+    rows += [
+        ("Nauczyciel", event.teacher),
+        ("Opis", event.description),
+        ("Data dodania", event.added),
+    ]
+    lines = "".join(
+        f'<tr class="line{i % 2}"><th>{k}</th><td>{v}</td></tr>'
+        for i, (k, v) in enumerate(rows)
+    )
+    return f'<div class="container-background"><table>{lines}</table></div>'
+
+
 @dataclass
 class FakeServer:
     """Synergia pages of one student, served through requests-mock."""
@@ -388,11 +510,20 @@ class FakeServer:
         default_factory=default_descriptive
     )
     new_schema: dict[int, str] = field(default_factory=dict)
+    events: list[FakeEvent] = field(default_factory=default_events)
+    bells: dict[int, tuple[str, str]] = field(default_factory=lambda: dict(BELLS))
     lucky: str | None = "7"
+    school: str = SCHOOL
 
     def __post_init__(self) -> None:
         """Register the pages."""
         self.mocker.get(f"{MOCK_URL}/informacja", text=self._info)
+        self.mocker.post(f"{MOCK_URL}/przegladaj_plan_lekcji", text=self._timetable)
+        self.mocker.post(f"{MOCK_URL}/terminarz/", text=self._schedule)
+        self.mocker.get(
+            re.compile(rf"{re.escape(MOCK_URL)}/terminarz/szczegoly(_wolne)?/\d+$"),
+            text=self._event,
+        )
         self.mocker.post(
             f"{MOCK_URL}/przegladaj_oceny/uczen",
             text=lambda request, context: (
@@ -413,7 +544,20 @@ class FakeServer:
         )
 
     def _info(self, request: Any, context: Any) -> str:
-        return info_page(lucky=self.lucky)
+        return info_page(lucky=self.lucky, school=self.school)
+
+    def _timetable(self, request: Any, context: Any) -> str:
+        week = parse_qs(request.text or "")["tydzien"][0]
+        return timetable_page(self.bells, date.fromisoformat(week[:10]))
+
+    def _schedule(self, request: Any, context: Any) -> str:
+        form = parse_qs(request.text or "")
+        return schedule_page(self.events, int(form["rok"][0]), int(form["miesiac"][0]))
+
+    def _event(self, request: Any, context: Any) -> str:
+        event_id = int(request.path.rsplit("/", 1)[1])
+        event = next(e for e in self.events if e.id == event_id)
+        return event_page(event)
 
     def _messages(self, request: Any, context: Any) -> str:
         form = parse_qs(request.text or "")

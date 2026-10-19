@@ -1,6 +1,11 @@
 """Constants for the Librus APIX integration."""
 
+from zoneinfo import ZoneInfo
+
 DOMAIN = "librus_apix"
+
+# Librus shows Polish local time.
+LIBRUS_TZ = ZoneInfo("Europe/Warsaw")
 
 # Config entry data
 CONF_SERVER_URL = "server_url"  # developer option: mock server, login skipped

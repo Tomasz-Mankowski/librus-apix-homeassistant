@@ -15,6 +15,7 @@ from .coordinator import (
     LibrusConfigEntry,
     LibrusData,
     MessagesCoordinator,
+    ScheduleCoordinator,
     StudentInfoCoordinator,
 )
 from .services import async_setup_services
@@ -22,7 +23,7 @@ from .store import LibrusStore
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.EVENT, Platform.SENSOR]
+PLATFORMS = [Platform.CALENDAR, Platform.EVENT, Platform.SENSOR]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -58,10 +59,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bo
         messages=MessagesCoordinator(hass, entry, api, store),
         announcements=AnnouncementsCoordinator(hass, entry, api, store),
         grades=GradesCoordinator(hass, entry, api, store),
+        schedule=ScheduleCoordinator(hass, entry, api, store),
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data = entry.runtime_data
-    for coordinator in (data.messages, data.announcements, data.grades):
+    for coordinator in (data.messages, data.announcements, data.grades, data.schedule):
         entry.async_create_background_task(
             hass, coordinator.async_refresh(), f"{coordinator.name} first refresh"
         )

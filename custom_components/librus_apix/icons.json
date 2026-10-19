@@ -48,6 +48,11 @@
       "descriptive_grades": {
         "default": "mdi:text-box-check-outline"
       }
+    },
+    "calendar": {
+      "schedule": {
+        "default": "mdi:calendar-school"
+      }
     }
   },
   "services": {

@@ -1,18 +1,18 @@
 """Data update coordinators: one per data type and entry, each with its own interval."""
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from dataclasses import dataclass, replace
+from datetime import date, datetime, timedelta
 import hashlib
 import logging
 import re
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from librus_apix.announcements import Announcement, get_announcements
 from librus_apix.client import Client
@@ -30,11 +30,14 @@ from .const import (
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_GRADES,
     CONF_INTERVAL_MESSAGES,
+    CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
     CONF_MESSAGE_COUNT,
+    CONF_TIMEFRAME,
     DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
+    LIBRUS_TZ,
 )
 from .exceptions import LibrusAuthError, LibrusError, LibrusUnavailableError
 from .grades import (
@@ -47,16 +50,22 @@ from .grades import (
     item_id,
     read_grades,
 )
+from .schedule import (
+    Bells,
+    ScheduleEvent,
+    months_in_range,
+    read_bells,
+    read_details,
+    read_months,
+)
 from .store import LibrusStore
 from .tracker import Change, TrackedItem, Tracker
 
 _LOGGER = logging.getLogger(__name__)
 
-# Librus shows Polish local time.
-LIBRUS_TZ = ZoneInfo("Europe/Warsaw")
-
-# Store key of the cached message contents.
+# Store keys: cached message contents, cached schedule event details.
 STORE_BODIES = "message_bodies"
+STORE_SCHEDULE_DETAILS = "schedule_details"
 
 
 @dataclass
@@ -69,6 +78,7 @@ class LibrusData:
     messages: MessagesCoordinator
     announcements: AnnouncementsCoordinator
     grades: GradesCoordinator
+    schedule: ScheduleCoordinator
 
 
 type LibrusConfigEntry = ConfigEntry[LibrusData]
@@ -130,8 +140,21 @@ class LibrusCoordinator[T](DataUpdateCoordinator[T]):
         raise NotImplementedError
 
 
-class StudentInfoCoordinator(LibrusCoordinator[StudentInformation]):
-    """Student information and lucky number (one page)."""
+@dataclass
+class StudentData:
+    """Student information, lucky number and the bell schedule."""
+
+    info: StudentInformation
+    bells: Bells
+
+
+def read_student(client: Client, today: date) -> StudentData:
+    """Read the information page and this week's timetable (executor)."""
+    return StudentData(get_student_information(client), read_bells(client, today))
+
+
+class StudentInfoCoordinator(LibrusCoordinator[StudentData]):
+    """Student information, lucky number and bell schedule (D-016)."""
 
     def __init__(
         self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
@@ -139,8 +162,8 @@ class StudentInfoCoordinator(LibrusCoordinator[StudentInformation]):
         """Use the student-info interval."""
         super().__init__(hass, entry, api, "student info", CONF_INTERVAL_STUDENT)
 
-    async def _async_fetch(self) -> StudentInformation:
-        return await self.api.async_call(get_student_information)
+    async def _async_fetch(self) -> StudentData:
+        return await self.api.async_call(read_student, dt_util.now(LIBRUS_TZ).date())
 
 
 def librus_datetime(text: str) -> str:
@@ -377,3 +400,62 @@ class GradesCoordinator(LibrusCoordinator[GradesPage]):
             for item in page.descriptive_items()
         )
         return page
+
+
+@dataclass
+class ScheduleData:
+    """Events of the covered months (current month + timeframe), with details."""
+
+    months: list[tuple[int, int]]
+    events: list[ScheduleEvent]
+
+
+class ScheduleCoordinator(LibrusCoordinator[ScheduleData]):
+    """Schedule of the current month and the next N months (F4, F5).
+
+    A detail page is read once per new or changed event and kept in the store.
+    """
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: LibrusConfigEntry,
+        api: LibrusApi,
+        store: LibrusStore,
+    ) -> None:
+        """Use the schedule interval and the timeframe option."""
+        super().__init__(hass, entry, api, "schedule", CONF_INTERVAL_SCHEDULE)
+        self._timeframe = entry.options.get(
+            CONF_TIMEFRAME, DEFAULT_OPTIONS[CONF_TIMEFRAME]
+        )
+        self._store = store
+
+    async def _async_fetch(self) -> ScheduleData:
+        months = months_in_range(dt_util.now(LIBRUS_TZ).date(), self._timeframe)
+        listed = await self.api.async_call(read_months, months)
+        cache: dict[str, dict] = self._store.data.setdefault(STORE_SCHEDULE_DETAILS, {})
+        needed = [
+            event
+            for event in listed
+            if "/" in event.id
+            and cache.get(event.id, {}).get("fingerprint") != event.fingerprint
+        ]
+        if needed:
+            details = await self.api.async_call(
+                read_details, [event.id for event in needed]
+            )
+            for event in needed:
+                cache[event.id] = {
+                    "fingerprint": event.fingerprint,
+                    "detail": details.get(event.id, {}),
+                }
+        unlisted = cache.keys() - {event.id for event in listed}
+        for event_id in unlisted:
+            del cache[event_id]
+        if needed or unlisted:
+            self._store.async_schedule_save()
+        events = [
+            replace(event, detail=cache.get(event.id, {}).get("detail", {}))
+            for event in listed
+        ]
+        return ScheduleData(months, events)

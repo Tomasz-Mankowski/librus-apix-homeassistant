@@ -255,6 +255,11 @@
           }
         }
       }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Terminarz"
+      }
     }
   },
   "exceptions": {

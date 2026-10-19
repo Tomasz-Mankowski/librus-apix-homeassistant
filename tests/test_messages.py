@@ -14,7 +14,6 @@ from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_capture_events,
 )
-import requests_mock as rm
 
 from custom_components.librus_apix.const import CONF_MESSAGE_COUNT, DOMAIN
 from custom_components.librus_apix.coordinator import (
@@ -29,7 +28,6 @@ from .common import (
     FakeMessage,
     FakeServer,
     default_messages,
-    info_page,
     messages_page,
 )
 
@@ -172,11 +170,10 @@ async def test_reload_does_not_fire_again(
 
 
 async def test_broken_message_page_does_not_block_the_setup(
-    hass: HomeAssistant, requests_mock: rm.Mocker, config_entry: MockConfigEntry
+    hass: HomeAssistant, mock_server: FakeServer, config_entry: MockConfigEntry
 ) -> None:
     """Messages fail: the entry loads, only the message entities are unavailable."""
-    requests_mock.get(f"{MOCK_URL}/informacja", text=info_page())
-    requests_mock.get(f"{MOCK_URL}/wiadomosci/1/5", status_code=500, text="")
+    mock_server.mocker.get(f"{MOCK_URL}/wiadomosci/1/5", status_code=500, text="")
 
     await _setup(hass, config_entry)
 

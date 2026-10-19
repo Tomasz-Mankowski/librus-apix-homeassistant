@@ -67,7 +67,12 @@ async def test_setup_creates_one_device_with_its_entities(
             *EXPECTED,
             *("messages", "messages", "announcements", "announcements"),
             *("grades_matematyka", "grades_jezyk_polski", "grades_plastyka", "grades"),
-            *("descriptive_edukacja_zdrowotna", "descriptive_grades", "gpa"),
+            *(
+                "descriptive_edukacja_zdrowotna",
+                "descriptive_grades",
+                "gpa",
+                "schedule",
+            ),
         ]
     )
     assert {entity.device_id for entity in entities} == {device.id}
@@ -118,7 +123,7 @@ async def test_unload_and_reload(
             er.async_get(hass), config_entry.entry_id
         )
     }
-    assert len(entity_ids) == 17
+    assert len(entity_ids) == 18
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)
@@ -190,6 +195,8 @@ async def test_store_is_loaded_and_removed_with_the_entry(
 
 
 @pytest.mark.usefixtures("mock_server")
+# The calendar stays loaded (failed unload), so its next-event timer stays too.
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_failed_unload_keeps_the_session(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:

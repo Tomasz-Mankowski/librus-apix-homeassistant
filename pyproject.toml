@@ -6,6 +6,10 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--cov --cov-report=term-missing"
+filterwarnings = [
+    # Inside librus-apix 1.6.0 (schedule.py uses bs4's old replaceWith name).
+    "ignore:Call to deprecated method replaceWith:DeprecationWarning",
+]
 
 [tool.coverage.run]
 source = ["custom_components/librus_apix"]

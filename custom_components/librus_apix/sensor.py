@@ -139,7 +139,7 @@ class StudentSensor(LibrusEntity[StudentInfoCoordinator], SensorEntity):
     @property
     def native_value(self) -> StateType:
         """Return the field value."""
-        return self.entity_description.value_fn(self.coordinator.data)
+        return self.entity_description.value_fn(self.coordinator.data.info)
 
 
 class MessagesSensor(LibrusEntity[MessagesCoordinator], SensorEntity):

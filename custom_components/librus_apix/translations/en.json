@@ -255,6 +255,11 @@
           }
         }
       }
+    },
+    "calendar": {
+      "schedule": {
+        "name": "Schedule"
+      }
     }
   },
   "exceptions": {
