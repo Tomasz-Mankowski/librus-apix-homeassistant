@@ -4,20 +4,31 @@ import logging
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
 from .api import LibrusApi
-from .const import CONF_SERVER_URL
+from .const import CONF_SERVER_URL, DOMAIN
 from .coordinator import (
     LibrusConfigEntry,
     LibrusData,
     MessagesCoordinator,
     StudentInfoCoordinator,
 )
+from .services import async_setup_services
 from .store import LibrusStore
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.EVENT, Platform.SENSOR]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions; they work for every loaded entry."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bool:

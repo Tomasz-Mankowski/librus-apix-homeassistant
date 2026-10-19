@@ -153,6 +153,31 @@
     },
     "update_failed": {
       "message": "Nie można odczytać danych z Librusa: {error}"
+    },
+    "invalid_entity": {
+      "message": "{entity_id} nie jest encją załadowanego wpisu Librus APIX."
+    },
+    "unknown_message": {
+      "message": "Wiadomości {message_id} nie ma na liście wiadomości tego ucznia."
+    },
+    "cannot_read_message": {
+      "message": "Nie można odczytać wiadomości z Librusa: {error}"
+    }
+  },
+  "services": {
+    "get_message_content": {
+      "name": "Pobierz treść wiadomości",
+      "description": "Czyta pełną treść wiadomości z Librusa. Librus oznacza wtedy wiadomość jako przeczytaną. Treść jest czytana raz i przechowywana; kolejne wywołania nie łączą się z Librusem.",
+      "fields": {
+        "entity_id": {
+          "name": "Czujnik wiadomości",
+          "description": "Czujnik wiadomości ucznia."
+        },
+        "message_id": {
+          "name": "ID wiadomości",
+          "description": "ID wiadomości z listy wiadomości czujnika."
+        }
+      }
     }
   }
 }

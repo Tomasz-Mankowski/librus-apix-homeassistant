@@ -113,7 +113,11 @@ class MessagesSensor(LibrusEntity[MessagesCoordinator], SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the message list."""
+        """Return the message list; content_cached tells if the body was read."""
+        bodies = self.coordinator.bodies
         return {
-            ATTR_MESSAGES: [message_details(m) for m in self.coordinator.data.messages]
+            ATTR_MESSAGES: [
+                {**details, "content_cached": details["id"] in bodies}
+                for details in map(message_details, self.coordinator.data.messages)
+            ]
         }

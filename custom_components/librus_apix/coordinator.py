@@ -14,7 +14,8 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from librus_apix.client import Client
-from librus_apix.messages import Message, get_received, parse
+from librus_apix.exceptions import ParseError
+from librus_apix.messages import Message, get_received, parse, unwrap_message_data
 from librus_apix.student_information import StudentInformation, get_student_information
 
 from .api import LibrusApi
@@ -33,6 +34,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # Librus shows Polish local time.
 LIBRUS_TZ = ZoneInfo("Europe/Warsaw")
+
+# Store key of the cached message contents.
+STORE_BODIES = "message_bodies"
 
 
 @dataclass
@@ -166,6 +170,32 @@ def read_messages(client: Client, count: int) -> list[Message]:
     return messages[:count]
 
 
+def read_message_content(client: Client, msg_id: str) -> dict[str, Any]:
+    """Read one message page: author, title, date, body and attachment names.
+
+    One request; the library's message_content gives no attachment names.
+    """
+    soup = BeautifulSoup(client.get(f"{client.MESSAGE_URL}/{msg_id}").text, "lxml")
+    table = soup.select_one("table[class='stretch']")
+    rows = table.select("tr") if table else []
+    body = soup.find("div", attrs={"class": "container-message-content"})
+    if len(rows) < 3 or body is None:
+        raise ParseError("Error in parsing message content.")
+    author, title, date = (unwrap_message_data(row).strip() for row in rows[:3])
+    attachments = [
+        cell.text.replace("\xa0", " ").strip()
+        for cell in soup.select("td")
+        if cell.select_one("img[src*='filetype_icons']")
+    ]
+    return {
+        "author": author,
+        "title": title,
+        "date": librus_datetime(date),
+        "content": body.text.strip(),
+        "attachments": attachments,
+    }
+
+
 @dataclass
 class MessagesData:
     """Last N received messages and the new ones of this poll."""
@@ -189,7 +219,13 @@ class MessagesCoordinator(LibrusCoordinator[MessagesData]):
         self._count = entry.options.get(
             CONF_MESSAGE_COUNT, DEFAULT_OPTIONS[CONF_MESSAGE_COUNT]
         )
+        self._store = store
         self._tracker: Tracker[Message] = Tracker(store, "messages")
+
+    @property
+    def bodies(self) -> dict[str, dict[str, Any]]:
+        """Message contents read so far, by message id (kept in the store)."""
+        return self._store.data.setdefault(STORE_BODIES, {})
 
     async def _async_fetch(self) -> MessagesData:
         messages = await self.api.async_call(read_messages, self._count)
@@ -197,4 +233,29 @@ class MessagesCoordinator(LibrusCoordinator[MessagesData]):
         changes = self._tracker.update(
             TrackedItem(message_id(m), {}, m) for m in reversed(messages)
         )
+        listed = {message_id(m) for m in messages}
+        bodies = self.bodies
+        if unlisted := bodies.keys() - listed:
+            for key in unlisted:
+                del bodies[key]
+            self._store.async_schedule_save()
         return MessagesData(messages, changes)
+
+    async def async_get_content(self, msg_id: str) -> dict[str, Any]:
+        """Return the content of a listed message; read it from Librus only once.
+
+        Reading a body marks the message read in Librus, so it is marked read here
+        too. Raises KeyError for a message that is not on the list.
+        """
+        listed = self.data.messages if self.data else []
+        message = next((m for m in listed if message_id(m) == msg_id), None)
+        if message is None:
+            raise KeyError(msg_id)
+        if msg_id not in self.bodies:
+            self.bodies[msg_id] = await self.api.async_call(
+                read_message_content, msg_id
+            )
+            self._store.async_schedule_save()
+            message.unread = False
+            self.async_update_listeners()
+        return {"id": msg_id, **self.bodies[msg_id]}

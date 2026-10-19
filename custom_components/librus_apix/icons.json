@@ -28,5 +28,10 @@
         "default": "mdi:email-alert-outline"
       }
     }
+  },
+  "services": {
+    "get_message_content": {
+      "service": "mdi:email-open-outline"
+    }
   }
 }

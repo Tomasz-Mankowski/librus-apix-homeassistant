@@ -73,6 +73,7 @@ async def test_sensor_shows_unread_count_and_list(
         "date": "2026-10-18T12:00:00+02:00",
         "unread": True,
         "has_attachment": False,
+        "content_cached": False,
     }
     assert messages[1]["has_attachment"] is True
     assert messages[2]["unread"] is False

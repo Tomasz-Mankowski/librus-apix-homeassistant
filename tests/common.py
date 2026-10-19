@@ -1,6 +1,7 @@
 """Shared test data: a fake Synergia server for requests-mock."""
 
 from dataclasses import dataclass, field
+import re
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -47,10 +48,12 @@ class FakeMessage:
     date: str
     unread: bool = False
     attachment: bool = False
+    body: str = "Treść wiadomości.\nDruga linia."
+    files: list[str] = field(default_factory=list)
 
 
 def default_messages() -> list[FakeMessage]:
-    """Eight messages, newest first: two unread, one with an attachment."""
+    """Eight messages, newest first: two unread, one with two attachments."""
     return [
         FakeMessage(
             5001 + i,
@@ -59,9 +62,28 @@ def default_messages() -> list[FakeMessage]:
             f"2026-10-{18 - i:02d} 12:0{i}:00",
             unread=i < 2,
             attachment=i == 1,
+            files=["Plan_lekcji.pdf", "Zgoda.docx"] if i == 1 else [],
         )
         for i in range(8)
     ]
+
+
+def message_page(message: FakeMessage) -> str:
+    """Return the page of one message with its body and attachments."""
+    files = "".join(
+        '<tr><td>&nbsp;<img src="/assets/img/filetype_icons/file.png">'
+        f"&nbsp;{name}</td><td></td></tr>"
+        for name in message.files
+    )
+    body = "<br>\n".join(message.body.split("\n"))
+    return (
+        '<table class="stretch"><tbody>'
+        f'<tr><td class="medium">Nadawca</td><td class="left">{message.author}</td></tr>'
+        f'<tr><td class="medium">Temat</td><td class="left">{message.title}</td></tr>'
+        f'<tr><td class="medium">Wysłano</td><td class="left">{message.date}</td></tr>'
+        f'</tbody></table><div class="container-message-content">{body}</div>'
+        f"<table><tbody>{files}</tbody></table>"
+    )
 
 
 def messages_page(messages: list[FakeMessage], page: int) -> str:
@@ -100,6 +122,10 @@ class FakeServer:
         self.mocker.get(f"{MOCK_URL}/informacja", text=self._info)
         self.mocker.get(f"{MOCK_URL}/wiadomosci/1/5", text=self._messages)
         self.mocker.post(f"{MOCK_URL}/wiadomosci/1/5", text=self._messages)
+        self.mocker.get(
+            re.compile(rf"{re.escape(MOCK_URL)}/wiadomosci/1/5/\d+$"),
+            text=self._message,
+        )
 
     def _info(self, request: Any, context: Any) -> str:
         return info_page(lucky=self.lucky)
@@ -107,6 +133,15 @@ class FakeServer:
     def _messages(self, request: Any, context: Any) -> str:
         form = parse_qs(request.text or "")
         return messages_page(self.messages, int(form.get("numer_strony105", ["0"])[0]))
+
+    def _message(self, request: Any, context: Any) -> str:
+        msg_id = int(request.path.rsplit("/", 1)[1])
+        message = next((m for m in self.messages if m.id == msg_id), None)
+        if message is None:
+            context.status_code = 404
+            return ""
+        message.unread = False
+        return message_page(message)
 
     def paths(self) -> list[str]:
         """Paths of all requests so far."""

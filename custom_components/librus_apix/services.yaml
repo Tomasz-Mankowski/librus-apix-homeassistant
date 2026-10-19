@@ -1,0 +1,13 @@
+get_message_content:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          integration: librus_apix
+          domain: sensor
+    message_id:
+      required: true
+      example: "5001"
+      selector:
+        text:

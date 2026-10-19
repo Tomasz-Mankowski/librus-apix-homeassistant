@@ -153,6 +153,31 @@
     },
     "update_failed": {
       "message": "Cannot read data from Librus: {error}"
+    },
+    "invalid_entity": {
+      "message": "{entity_id} is not an entity of a loaded Librus APIX entry."
+    },
+    "unknown_message": {
+      "message": "Message {message_id} is not on the message list of this student."
+    },
+    "cannot_read_message": {
+      "message": "Cannot read the message from Librus: {error}"
+    }
+  },
+  "services": {
+    "get_message_content": {
+      "name": "Get message content",
+      "description": "Reads the full content of a message from Librus. Librus then marks the message as read. The content is read once and kept; later calls do not contact Librus.",
+      "fields": {
+        "entity_id": {
+          "name": "Messages sensor",
+          "description": "The messages sensor of the student."
+        },
+        "message_id": {
+          "name": "Message ID",
+          "description": "The id of the message from the sensor's message list."
+        }
+      }
     }
   }
 }
