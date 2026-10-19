@@ -11,11 +11,52 @@
         "data_description": {
           "username": "Librus Synergia login of the parent or student account.",
           "password": "Password of the same account."
+        },
+        "sections": {
+          "developer": {
+            "name": "Developer options",
+            "description": "Only for tests with a mock server. Leave empty for the real Librus Synergia.",
+            "data": {
+              "server_url": "Server URL"
+            },
+            "data_description": {
+              "server_url": "Address of a Librus Synergia mock, for example http://librus-mock-a:8000. With a server URL the login is skipped."
+            }
+          }
+        }
+      },
+      "settings": {
+        "title": "Update settings",
+        "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. You can change this later.",
+        "data": {
+          "interval_student": "Student info",
+          "interval_grades": "Grades",
+          "interval_messages": "Messages",
+          "interval_announcements": "Announcements",
+          "interval_schedule": "Schedule",
+          "timeframe": "Schedule months ahead",
+          "message_count": "Number of messages"
+        },
+        "data_description": {
+          "interval_student": "Minutes between updates of the student info and lucky number (10–1440).",
+          "interval_grades": "Minutes between updates of the grades (10–1440).",
+          "interval_messages": "Minutes between updates of the message list (10–1440).",
+          "interval_announcements": "Minutes between updates of the announcements (10–1440).",
+          "interval_schedule": "Minutes between updates of the schedule (10–1440).",
+          "timeframe": "The current month plus this many months (0–6).",
+          "message_count": "How many of the last messages are read (1–100)."
         }
       }
     },
+    "error": {
+      "invalid_auth": "Wrong login or password.",
+      "cannot_connect": "Cannot connect to Librus Synergia. Try again later.",
+      "maintenance": "Librus Synergia is in maintenance. Try again later.",
+      "invalid_url": "The server URL must start with http:// or https://.",
+      "unknown": "Unexpected error. See the Home Assistant log."
+    },
     "abort": {
-      "not_implemented": "Setup is not available yet in this version."
+      "already_configured": "This login is already set up."
     }
   }
 }

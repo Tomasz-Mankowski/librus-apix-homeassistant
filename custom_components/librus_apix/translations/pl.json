@@ -11,11 +11,52 @@
         "data_description": {
           "username": "Login konta rodzica lub ucznia w Librus Synergia.",
           "password": "Hasło do tego konta."
+        },
+        "sections": {
+          "developer": {
+            "name": "Opcje deweloperskie",
+            "description": "Tylko do testów z serwerem testowym (mock). Zostaw puste dla prawdziwego Librus Synergia.",
+            "data": {
+              "server_url": "Adres serwera"
+            },
+            "data_description": {
+              "server_url": "Adres serwera testowego Librus Synergia, np. http://librus-mock-a:8000. Z adresem serwera logowanie jest pomijane."
+            }
+          }
+        }
+      },
+      "settings": {
+        "title": "Ustawienia odświeżania",
+        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Możesz to zmienić później.",
+        "data": {
+          "interval_student": "Dane ucznia",
+          "interval_grades": "Oceny",
+          "interval_messages": "Wiadomości",
+          "interval_announcements": "Ogłoszenia",
+          "interval_schedule": "Terminarz",
+          "timeframe": "Miesiące terminarza do przodu",
+          "message_count": "Liczba wiadomości"
+        },
+        "data_description": {
+          "interval_student": "Minuty między odświeżeniami danych ucznia i szczęśliwego numerka (10–1440).",
+          "interval_grades": "Minuty między odświeżeniami ocen (10–1440).",
+          "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
+          "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",
+          "interval_schedule": "Minuty między odświeżeniami terminarza (10–1440).",
+          "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
+          "message_count": "Ile ostatnich wiadomości czytać (1–100)."
         }
       }
     },
+    "error": {
+      "invalid_auth": "Nieprawidłowy login lub hasło.",
+      "cannot_connect": "Brak połączenia z Librus Synergia. Spróbuj ponownie później.",
+      "maintenance": "Librus Synergia ma przerwę techniczną. Spróbuj ponownie później.",
+      "invalid_url": "Adres serwera musi zaczynać się od http:// lub https://.",
+      "unknown": "Nieoczekiwany błąd. Szczegóły w logu Home Assistant."
+    },
     "abort": {
-      "not_implemented": "Konfiguracja nie jest jeszcze dostępna w tej wersji."
+      "already_configured": "Ten login jest już skonfigurowany."
     }
   }
 }
