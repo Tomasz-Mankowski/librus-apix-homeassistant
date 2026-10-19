@@ -23,11 +23,16 @@ from librus_apix.student_information import StudentInformation, get_student_info
 from .api import LibrusApi
 from .average import AverageRules
 from .const import (
+    CONF_AVERAGE_MINUS,
+    CONF_AVERAGE_ONLY_COUNTED,
+    CONF_AVERAGE_PLUS,
+    CONF_AVERAGE_WEIGHTS,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_GRADES,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_STUDENT,
     CONF_MESSAGE_COUNT,
+    DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
 )
@@ -338,7 +343,13 @@ class GradesCoordinator(LibrusCoordinator[GradesPage]):
     ) -> None:
         """Use the grades interval and the average rules."""
         super().__init__(hass, entry, api, "grades", CONF_INTERVAL_GRADES)
-        self.rules = AverageRules()
+        options = {**DEFAULT_AVERAGE_OPTIONS, **entry.options}
+        self.rules = AverageRules(
+            use_weights=options[CONF_AVERAGE_WEIGHTS],
+            only_counted=options[CONF_AVERAGE_ONLY_COUNTED],
+            plus=options[CONF_AVERAGE_PLUS],
+            minus=options[CONF_AVERAGE_MINUS],
+        )
         self._grade_tracker: Tracker[GradeItem] = Tracker(store, "grades")
         self._final_tracker: Tracker[FinalItem] = Tracker(store, "final_grades")
         self._descriptive_tracker: Tracker[DescriptiveItem] = Tracker(

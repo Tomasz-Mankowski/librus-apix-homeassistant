@@ -14,6 +14,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 import requests_mock as rm
 
 from custom_components.librus_apix.const import (
+    CONF_AVERAGE_MINUS,
+    CONF_AVERAGE_ONLY_COUNTED,
+    CONF_AVERAGE_PLUS,
+    CONF_AVERAGE_WEIGHTS,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_GRADES,
     CONF_INTERVAL_MESSAGES,
@@ -22,6 +26,7 @@ from custom_components.librus_apix.const import (
     CONF_MESSAGE_COUNT,
     CONF_SERVER_URL,
     CONF_TIMEFRAME,
+    DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
     SECTION_DEVELOPER,
@@ -352,10 +357,13 @@ async def test_options_show_current_values_and_saving_reloads(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
-    # An empty submit keeps the pre-filled values.
+    # Empty submits keep the pre-filled values of both steps.
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "averages"
     result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert entry.options == {
         **DEFAULT_OPTIONS,
+        **DEFAULT_AVERAGE_OPTIONS,
         CONF_INTERVAL_GRADES: 30,
         CONF_TIMEFRAME: 3,
     }
@@ -363,14 +371,42 @@ async def test_options_show_current_values_and_saving_reloads(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {**entry.options, CONF_INTERVAL_MESSAGES: 45, CONF_MESSAGE_COUNT: 50},
+        {**DEFAULT_OPTIONS, CONF_INTERVAL_MESSAGES: 45, CONF_MESSAGE_COUNT: 50},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_AVERAGE_WEIGHTS: False,
+            CONF_AVERAGE_ONLY_COUNTED: True,
+            CONF_AVERAGE_PLUS: 0.25,
+            CONF_AVERAGE_MINUS: 0.5,
+        },
     )
     await hass.async_block_till_done(wait_background_tasks=True)
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_INTERVAL_MESSAGES] == 45
     assert entry.options[CONF_MESSAGE_COUNT] == 50
-    assert len(mock_setup_entry.mock_calls) == 2
+    assert entry.options[CONF_AVERAGE_WEIGHTS] is False
+    assert entry.options[CONF_AVERAGE_PLUS] == 0.25
+    assert entry.options[CONF_AVERAGE_MINUS] == 0.5
+    # Setup, then one reload per save (the first save added the average rules).
+    assert len(mock_setup_entry.mock_calls) == 3
+
+
+@pytest.mark.parametrize("value", [-0.1, 1.5])
+async def test_average_values_out_of_range_are_rejected(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock, value: float
+) -> None:
+    """Plus and minus values are between 0 and 1."""
+    entry = await _loaded_entry(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], {**DEFAULT_AVERAGE_OPTIONS, CONF_AVERAGE_PLUS: value}
+        )
 
 
 async def test_options_out_of_range_are_rejected(

@@ -14,6 +14,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -29,12 +30,18 @@ from librus_apix.student_information import get_student_information
 
 from .api import LibrusApi
 from .const import (
+    CONF_AVERAGE_MINUS,
+    CONF_AVERAGE_ONLY_COUNTED,
+    CONF_AVERAGE_PLUS,
+    CONF_AVERAGE_WEIGHTS,
     CONF_MESSAGE_COUNT,
     CONF_SERVER_URL,
     CONF_TIMEFRAME,
+    DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
     INTERVAL_OPTIONS,
+    MAX_GRADE_MODIFIER,
     MAX_INTERVAL,
     MAX_MESSAGE_COUNT,
     MAX_TIMEFRAME,
@@ -106,6 +113,41 @@ def settings_schema(values: dict[str, Any]) -> vol.Schema:
 def settings_options(user_input: dict[str, Any]) -> dict[str, int]:
     """Stored options: every setting as a whole number."""
     return {key: int(user_input[key]) for key in DEFAULT_OPTIONS}
+
+
+def averages_schema(values: dict[str, Any]) -> vol.Schema:
+    """Schema of the average rules (weights, counting, plus and minus values)."""
+    modifier = NumberSelector(
+        NumberSelectorConfig(
+            min=0, max=MAX_GRADE_MODIFIER, step=0.05, mode=NumberSelectorMode.BOX
+        )
+    )
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_AVERAGE_WEIGHTS, default=values[CONF_AVERAGE_WEIGHTS]
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_AVERAGE_ONLY_COUNTED, default=values[CONF_AVERAGE_ONLY_COUNTED]
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_AVERAGE_PLUS, default=values[CONF_AVERAGE_PLUS]
+            ): modifier,
+            vol.Required(
+                CONF_AVERAGE_MINUS, default=values[CONF_AVERAGE_MINUS]
+            ): modifier,
+        }
+    )
+
+
+def average_options(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Stored average rules: two switches and two numbers."""
+    return {
+        CONF_AVERAGE_WEIGHTS: bool(user_input[CONF_AVERAGE_WEIGHTS]),
+        CONF_AVERAGE_ONLY_COUNTED: bool(user_input[CONF_AVERAGE_ONLY_COUNTED]),
+        CONF_AVERAGE_PLUS: float(user_input[CONF_AVERAGE_PLUS]),
+        CONF_AVERAGE_MINUS: float(user_input[CONF_AVERAGE_MINUS]),
+    }
 
 
 class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -223,17 +265,39 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class LibrusApixOptionsFlow(OptionsFlowWithReload):
-    """Change the settings; the entry reloads after saving."""
+    """Change the settings, then the average rules; the entry reloads after saving."""
+
+    def __init__(self) -> None:
+        """Start with no new settings."""
+        self._settings: dict[str, Any] = {}
+
+    @property
+    def _current(self) -> dict[str, Any]:
+        return {
+            **DEFAULT_OPTIONS,
+            **DEFAULT_AVERAGE_OPTIONS,
+            **self.config_entry.options,
+        }
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show the settings with the current values."""
         if user_input is not None:
-            return self.async_create_entry(data=settings_options(user_input))
+            self._settings = settings_options(user_input)
+            return await self.async_step_averages()
         return self.async_show_form(
-            step_id="init",
-            data_schema=settings_schema(
-                {**DEFAULT_OPTIONS, **self.config_entry.options}
-            ),
+            step_id="init", data_schema=settings_schema(self._current)
+        )
+
+    async def async_step_averages(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show the rules of the calculated averages with the current values."""
+        if user_input is not None:
+            return self.async_create_entry(
+                data={**self._settings, **average_options(user_input)}
+            )
+        return self.async_show_form(
+            step_id="averages", data_schema=averages_schema(self._current)
         )

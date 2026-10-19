@@ -96,6 +96,22 @@
           "timeframe": "The current month plus this many months (0–6).",
           "message_count": "How many of the last messages are read (1–100)."
         }
+      },
+      "averages": {
+        "title": "Calculated averages",
+        "description": "Used only when the school does not show averages in Librus.",
+        "data": {
+          "average_weights": "Use grade weights",
+          "average_only_counted": "Only grades that count to the average",
+          "average_plus": "Value of a plus",
+          "average_minus": "Value of a minus"
+        },
+        "data_description": {
+          "average_weights": "On: weighted mean with the Librus weights. Off: every grade counts once.",
+          "average_only_counted": "On: grades marked \"Licz do średniej: nie\" are skipped.",
+          "average_plus": "Added for a plus, for example 4+ = 4.5 with 0.5.",
+          "average_minus": "Subtracted for a minus (twice for =), for example 5- = 4.75 with 0.25."
+        }
       }
     }
   },
@@ -170,6 +186,28 @@
           },
           "grades": {
             "name": "Descriptive grades"
+          }
+        }
+      },
+      "gpa": {
+        "name": "GPA",
+        "state_attributes": {
+          "semester": {
+            "name": "Semester"
+          },
+          "average_source": {
+            "name": "Average source",
+            "state": {
+              "librus": "Librus",
+              "calculated": "Calculated",
+              "mixed": "Mixed"
+            }
+          },
+          "averages": {
+            "name": "Averages"
+          },
+          "subjects": {
+            "name": "Subject averages"
           }
         }
       }

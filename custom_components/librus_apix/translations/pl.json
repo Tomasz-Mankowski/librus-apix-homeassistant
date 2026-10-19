@@ -96,6 +96,22 @@
           "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
           "message_count": "Ile ostatnich wiadomości czytać (1–100)."
         }
+      },
+      "averages": {
+        "title": "Obliczane średnie",
+        "description": "Używane tylko wtedy, gdy szkoła nie pokazuje średnich w Librusie.",
+        "data": {
+          "average_weights": "Uwzględniaj wagi ocen",
+          "average_only_counted": "Tylko oceny liczone do średniej",
+          "average_plus": "Wartość plusa",
+          "average_minus": "Wartość minusa"
+        },
+        "data_description": {
+          "average_weights": "Włączone: średnia ważona z wagami z Librusa. Wyłączone: każda ocena liczy się raz.",
+          "average_only_counted": "Włączone: oceny z „Licz do średniej: nie” są pomijane.",
+          "average_plus": "Dodawana za plus, np. 4+ = 4,5 przy 0,5.",
+          "average_minus": "Odejmowana za minus (dwa razy za =), np. 5- = 4,75 przy 0,25."
+        }
       }
     }
   },
@@ -170,6 +186,28 @@
           },
           "grades": {
             "name": "Oceny opisowe"
+          }
+        }
+      },
+      "gpa": {
+        "name": "Średnia ocen",
+        "state_attributes": {
+          "semester": {
+            "name": "Semestr"
+          },
+          "average_source": {
+            "name": "Źródło średniej",
+            "state": {
+              "librus": "Librus",
+              "calculated": "Obliczona",
+              "mixed": "Mieszana"
+            }
+          },
+          "averages": {
+            "name": "Średnie"
+          },
+          "subjects": {
+            "name": "Średnie przedmiotów"
           }
         }
       }

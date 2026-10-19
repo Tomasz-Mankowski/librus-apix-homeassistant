@@ -30,6 +30,9 @@
       },
       "subject_descriptive": {
         "default": "mdi:text-box-outline"
+      },
+      "gpa": {
+        "default": "mdi:chart-line"
       }
     },
     "event": {

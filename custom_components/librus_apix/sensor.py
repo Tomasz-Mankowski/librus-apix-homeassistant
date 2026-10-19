@@ -33,6 +33,7 @@ from .grades import (
     descriptive_details,
     final_details,
     grade_details,
+    overall,
     period_average,
 )
 
@@ -100,6 +101,7 @@ async def async_setup_entry(
             *(StudentSensor(data.student, desc) for desc in STUDENT_SENSORS),
             MessagesSensor(data.messages),
             AnnouncementsSensor(data.announcements),
+            GpaSensor(data.grades),
         ]
     )
 
@@ -298,4 +300,42 @@ class DescriptiveSensor(LibrusEntity[GradesCoordinator], SensorEntity):
                 period: [descriptive_details(i) for i in items if i.semester == number]
                 for number, period in ((1, PERIODS[0]), (2, PERIODS[1]))
             },
+        }
+
+
+class GpaSensor(LibrusEntity[GradesCoordinator], SensorEntity):
+    """Overall average (GPA) of the current semester: mean of the subject averages."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 2
+
+    def __init__(self, coordinator: GradesCoordinator) -> None:
+        """Create the GPA sensor."""
+        super().__init__(
+            coordinator, SensorEntityDescription(key="gpa", translation_key="gpa")
+        )
+
+    @property
+    def _period(self) -> str:
+        return PERIODS[self.coordinator.data.semester - 1]
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the GPA of the current semester."""
+        return overall(self.coordinator.data, self._period, self.coordinator.rules)[0]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the semester, the source and the averages."""
+        page, rules = self.coordinator.data, self.coordinator.rules
+        _, source, subjects = overall(page, self._period, rules)
+        averages = {}
+        for period in PERIODS:
+            value = overall(page, period, rules)[0]
+            averages[period] = round(value, 2) if value is not None else None
+        return {
+            "semester": page.semester,
+            "average_source": source,
+            "averages": averages,
+            "subjects": {name: round(value, 2) for name, value in subjects.items()},
         }

@@ -17,7 +17,13 @@ import requests
 from librus_apix.client import Client
 from librus_apix.grades import Gpa, Grade, GradeDescriptive, get_grades
 
-from .average import AverageRules, GradeInput, grade_value, subject_average
+from .average import (
+    AverageRules,
+    GradeInput,
+    grade_value,
+    overall_average,
+    subject_average,
+)
 from .tracker import Change
 
 SEMESTER_1 = "semester_1"
@@ -320,3 +326,23 @@ def descriptive_details(item: DescriptiveItem) -> dict[str, Any]:
         "content": content[1].strip() if content else grade.desc.strip(),
         "description": grade.desc.strip(),
     }
+
+
+def overall(
+    page: GradesPage, period: str, rules: AverageRules
+) -> tuple[float | None, str | None, dict[str, float]]:
+    """Return (GPA, source, subject averages) of a period (D-026).
+
+    GPA = plain mean of the subject averages; subjects without one are skipped.
+    Source: "librus", "calculated" or "mixed", from the subject averages used.
+    """
+    averages: dict[str, float] = {}
+    sources = set()
+    for name, subject in page.subjects.items():
+        value, source = period_average(subject, period, rules)
+        if value is not None:
+            averages[name] = value
+            sources.add(source)
+    gpa = overall_average(averages.values())
+    source = None if not sources else sources.pop() if len(sources) == 1 else "mixed"
+    return gpa, source, averages
