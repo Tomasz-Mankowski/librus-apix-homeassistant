@@ -66,7 +66,7 @@ async def test_setup_creates_one_device_with_its_entities(
         [
             *EXPECTED,
             *("messages", "messages", "announcements", "announcements"),
-            *("grades_matematyka", "grades_jezyk_polski", "grades_plastyka"),
+            *("grades_matematyka", "grades_jezyk_polski", "grades_plastyka", "grades"),
         ]
     )
     assert {entity.device_id for entity in entities} == {device.id}
@@ -117,7 +117,7 @@ async def test_unload_and_reload(
             er.async_get(hass), config_entry.entry_id
         )
     }
-    assert len(entity_ids) == 13
+    assert len(entity_ids) == 14
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)

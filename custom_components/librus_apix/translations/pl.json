@@ -183,6 +183,18 @@
             }
           }
         }
+      },
+      "grades": {
+        "name": "Oceny",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_grade": "Nowa ocena",
+              "grade_changed": "Zmiana oceny",
+              "final_grade": "Ocena śródroczna lub roczna"
+            }
+          }
+        }
       }
     }
   },

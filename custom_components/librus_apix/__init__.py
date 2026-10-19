@@ -57,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bo
         student=student,
         messages=MessagesCoordinator(hass, entry, api, store),
         announcements=AnnouncementsCoordinator(hass, entry, api, store),
-        grades=GradesCoordinator(hass, entry, api),
+        grades=GradesCoordinator(hass, entry, api, store),
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data = entry.runtime_data

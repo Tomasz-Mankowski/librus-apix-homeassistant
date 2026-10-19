@@ -17,6 +17,7 @@ from librus_apix.client import Client
 from librus_apix.grades import Gpa, Grade, GradeDescriptive, get_grades
 
 from .average import AverageRules, GradeInput, grade_value, subject_average
+from .tracker import Change
 
 SEMESTER_1 = "semester_1"
 SEMESTER_2 = "semester_2"
@@ -53,13 +54,38 @@ class SubjectGrades:
     finals: list[FinalGrade] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class GradeItem:
+    """A regular grade with its place; ``original`` is the grade it corrects."""
+
+    subject: str
+    semester: int
+    grade: Grade
+    original: Grade | None = None
+
+
+@dataclass(frozen=True)
+class FinalItem:
+    """A semester or year grade with its subject."""
+
+    subject: str
+    final: FinalGrade
+
+
 @dataclass
 class GradesPage:
-    """Everything read from the grades page; ``semester`` is the current one."""
+    """Everything read from the grades page; ``semester`` is the current one.
+
+    ``corrections`` maps the id of a correction to the id of the grade it
+    corrects. The coordinator fills in the changes of the poll.
+    """
 
     subjects: dict[str, SubjectGrades]
     descriptive: list[dict[str, list[GradeDescriptive]]]
     semester: int
+    corrections: dict[str, str] = field(default_factory=dict)
+    grade_changes: list[Change[GradeItem]] = field(default_factory=list)
+    final_changes: list[Change[FinalItem]] = field(default_factory=list)
 
 
 class _PageKeeper:
@@ -102,10 +128,25 @@ def _tooltip(tag: Tag) -> dict[str, str]:
     return pairs
 
 
-def read_final_grades(page: str) -> dict[str, list[FinalGrade]]:
+def read_corrections(soup: BeautifulSoup) -> dict[str, str]:
+    """Return {correction id: corrected grade id} from the grades page.
+
+    A corrected grade and its correction share a wrapper span: [old new].
+    """
+    corrections = {}
+    for wrapper in soup.select("td:not([class='center']) > span:not(.grade-box)"):
+        ids = [
+            grade_id(str(link.get("href", "")))
+            for link in wrapper.select(":scope > span.grade-box > a")
+        ]
+        for correction in ids[1:]:
+            corrections[correction] = ids[0]
+    return corrections
+
+
+def read_final_grades(soup: BeautifulSoup) -> dict[str, list[FinalGrade]]:
     """Return the semester and year grades by subject from the grades page."""
     finals: dict[str, list[FinalGrade]] = {}
-    soup = BeautifulSoup(page, "lxml")
     for row in soup.find_all("tr", attrs={"class": ["line0", "line1"], "id": None}):
         cells = row.find_all("td", recursive=False)
         if not any(cell.get("class") == _TOGGLE for cell in cells):
@@ -136,7 +177,8 @@ def read_grades(client: Client) -> GradesPage:
     """Read the grades page once (runs in the executor)."""
     keeper = _PageKeeper(client)
     numeric, averages, descriptive = get_grades(keeper)
-    finals = read_final_grades(keeper.page)
+    soup = BeautifulSoup(keeper.page, "lxml")
+    finals = read_final_grades(soup)
     names = dict.fromkeys([*numeric[0], *numeric[1], *averages])
     subjects = {}
     for name in names:
@@ -156,7 +198,29 @@ def read_grades(client: Client) -> GradesPage:
         )
     # The second semester has started once any subject has a grade in it.
     semester = 2 if any(subject.grades[2] for subject in subjects.values()) else 1
-    return GradesPage(subjects, descriptive, semester)
+    return GradesPage(subjects, descriptive, semester, read_corrections(soup))
+
+
+def grade_items(page: GradesPage) -> list[GradeItem]:
+    """All regular grades in date order, corrections linked to their originals."""
+    items = []
+    for subject in page.subjects.values():
+        for semester, grades in subject.grades.items():
+            by_id = {grade_id(grade.href): grade for grade in grades}
+            for grade in grades:
+                original = page.corrections.get(grade_id(grade.href))
+                items.append(
+                    GradeItem(subject.name, semester, grade, by_id.get(original or ""))
+                )
+    return sorted(items, key=lambda item: (item.grade.date, item_id(item)))
+
+
+def item_id(item: GradeItem) -> str:
+    """Id of a grade; without a link: subject|semester|date|category."""
+    grade = item.grade
+    return grade_id(grade.href) or (
+        f"{item.subject}|{item.semester}|{grade.date}|{grade.category}"
+    )
 
 
 def period_average(

@@ -176,7 +176,7 @@ def test_final_grades_only_from_subject_rows() -> None:
         "<td>Short</td><td></td></tr></table>"
     )
 
-    assert read_final_grades(page) == {}
+    assert read_final_grades(BeautifulSoup(page, "lxml")) == {}
 
 
 def test_page_keeper_keeps_only_the_grades_page() -> None:

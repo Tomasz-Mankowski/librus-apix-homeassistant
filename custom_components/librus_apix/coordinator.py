@@ -32,7 +32,14 @@ from .const import (
     DOMAIN,
 )
 from .exceptions import LibrusAuthError, LibrusError, LibrusUnavailableError
-from .grades import GradesPage, read_grades
+from .grades import (
+    FinalItem,
+    GradeItem,
+    GradesPage,
+    grade_items,
+    item_id,
+    read_grades,
+)
 from .store import LibrusStore
 from .tracker import Change, TrackedItem, Tracker
 
@@ -321,11 +328,32 @@ class GradesCoordinator(LibrusCoordinator[GradesPage]):
     """Grades, semester/final grades and averages (one page per poll)."""
 
     def __init__(
-        self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
+        self,
+        hass: HomeAssistant,
+        entry: LibrusConfigEntry,
+        api: LibrusApi,
+        store: LibrusStore,
     ) -> None:
         """Use the grades interval and the average rules."""
         super().__init__(hass, entry, api, "grades", CONF_INTERVAL_GRADES)
         self.rules = AverageRules()
+        self._grade_tracker: Tracker[GradeItem] = Tracker(store, "grades")
+        self._final_tracker: Tracker[FinalItem] = Tracker(store, "final_grades")
 
     async def _async_fetch(self) -> GradesPage:
-        return await self.api.async_call(read_grades)
+        page = await self.api.async_call(read_grades)
+        # The snapshot is the grade value: another value is a changed grade.
+        page.grade_changes = self._grade_tracker.update(
+            TrackedItem(item_id(item), {"grade": item.grade.grade}, item)
+            for item in grade_items(page)
+        )
+        page.final_changes = self._final_tracker.update(
+            TrackedItem(
+                final.id or f"{name}|{final.period}|{final.proposed}",
+                {"grade": final.grade, "proposed": final.proposed},
+                FinalItem(name, final),
+            )
+            for name, subject in page.subjects.items()
+            for final in subject.finals
+        )
+        return page

@@ -15,6 +15,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .coordinator import (
     AnnouncementsCoordinator,
     AnnouncementsData,
+    GradesCoordinator,
     LibrusConfigEntry,
     LibrusCoordinator,
     MessagesCoordinator,
@@ -23,12 +24,16 @@ from .coordinator import (
     message_details,
 )
 from .entity import LibrusEntity
+from .grades import GradesPage, final_details, grade_details
 
 ATTR_STUDENT = "student"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 
 EVENT_NEW_ANNOUNCEMENT = "new_announcement"
 EVENT_NEW_MESSAGE = "new_message"
+EVENT_NEW_GRADE = "new_grade"
+EVENT_GRADE_CHANGED = "grade_changed"
+EVENT_FINAL_GRADE = "final_grade"
 
 # Coordinators fetch the data; entities never poll.
 PARALLEL_UPDATES = 0
@@ -42,7 +47,11 @@ async def async_setup_entry(
     """Add the event entities of the student."""
     data = entry.runtime_data
     async_add_entities(
-        [MessagesEvent(data.messages), AnnouncementsEvent(data.announcements)]
+        [
+            MessagesEvent(data.messages),
+            AnnouncementsEvent(data.announcements),
+            GradesEvent(data.grades),
+        ]
     )
 
 
@@ -133,3 +142,55 @@ class AnnouncementsEvent(LibrusEventEntity[AnnouncementsCoordinator]):
             for change in data.changes
             if change.kind == "new"
         ]
+
+
+class GradesEvent(LibrusEventEntity[GradesCoordinator]):
+    """new_grade, grade_changed and final_grade for each change of a poll.
+
+    A correction is a new_grade with ``is_correction`` and the ``original_grade``.
+    """
+
+    def __init__(self, coordinator: GradesCoordinator) -> None:
+        """Create the grades event entity."""
+        super().__init__(
+            coordinator,
+            EventEntityDescription(
+                key="grades",
+                translation_key="grades",
+                event_types=[EVENT_NEW_GRADE, EVENT_GRADE_CHANGED, EVENT_FINAL_GRADE],
+            ),
+        )
+
+    def _events(self, data: GradesPage) -> Iterable[tuple[str, dict[str, Any]]]:
+        rules = self.coordinator.rules
+        for change in data.grade_changes:
+            item = change.item
+            details = {
+                **grade_details(item.grade, rules),
+                "subject": item.subject,
+                "semester": item.semester,
+            }
+            if change.kind == "new":
+                original = item.original
+                yield (
+                    EVENT_NEW_GRADE,
+                    {
+                        **details,
+                        "is_correction": original is not None,
+                        "original_grade": (
+                            grade_details(original, rules) if original else None
+                        ),
+                    },
+                )
+            else:
+                old = change.old["grade"] if change.old else None
+                yield EVENT_GRADE_CHANGED, {**details, "old_grade": old}
+        for change in data.final_changes:
+            yield (
+                EVENT_FINAL_GRADE,
+                {
+                    **final_details(change.item.final),
+                    "subject": change.item.subject,
+                    "old_grade": change.old["grade"] if change.old else None,
+                },
+            )

@@ -35,6 +35,9 @@
       },
       "announcements": {
         "default": "mdi:bullhorn"
+      },
+      "grades": {
+        "default": "mdi:school"
       }
     }
   },

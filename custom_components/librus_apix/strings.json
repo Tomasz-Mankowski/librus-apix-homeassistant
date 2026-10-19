@@ -183,6 +183,18 @@
             }
           }
         }
+      },
+      "grades": {
+        "name": "Grades",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_grade": "New grade",
+              "grade_changed": "Grade changed",
+              "final_grade": "Semester or year grade"
+            }
+          }
+        }
       }
     }
   },
