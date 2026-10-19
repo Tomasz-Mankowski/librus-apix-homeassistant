@@ -1,10 +1,17 @@
 """Config flow for the Librus APIX integration."""
 
+from collections.abc import Mapping
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     NumberSelector,
@@ -39,16 +46,15 @@ from .exceptions import LibrusAuthError, LibrusConnectionError, LibrusUnavailabl
 
 _LOGGER = logging.getLogger(__name__)
 
+USERNAME_SELECTOR = TextSelector(TextSelectorConfig(autocomplete="username"))
+PASSWORD_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
+)
+
 USER_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_USERNAME): TextSelector(
-            TextSelectorConfig(autocomplete="username")
-        ),
-        vol.Required(CONF_PASSWORD): TextSelector(
-            TextSelectorConfig(
-                type=TextSelectorType.PASSWORD, autocomplete="current-password"
-            )
-        ),
+        vol.Required(CONF_USERNAME): USERNAME_SELECTOR,
+        vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
         vol.Required(SECTION_DEVELOPER): section(
             vol.Schema(
                 {
@@ -59,6 +65,14 @@ USER_SCHEMA = vol.Schema(
             ),
             {"collapsed": True},
         ),
+    }
+)
+
+
+REAUTH_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_USERNAME): USERNAME_SELECTOR,
+        vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
     }
 )
 
@@ -145,6 +159,46 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="settings", data_schema=settings_schema(DEFAULT_OPTIONS)
         )
 
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Start a new login when Librus rejects the stored credentials."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the password again; the login must be the same account."""
+        entry = self._get_reauth_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            username = user_input[CONF_USERNAME].strip()
+            await self.async_set_unique_id(username.lower())
+            self._abort_if_unique_id_mismatch()
+            data = {
+                **entry.data,
+                CONF_USERNAME: username,
+                CONF_PASSWORD: user_input[CONF_PASSWORD],
+            }
+            if error := await self._async_check_login(data):
+                errors["base"] = error
+            else:
+                return self.async_update_reload_and_abort(entry, data=data)
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=self.add_suggested_values_to_schema(
+                REAUTH_SCHEMA, {CONF_USERNAME: entry.data[CONF_USERNAME]}
+            ),
+            errors=errors,
+            description_placeholders={"name": entry.title},
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> LibrusApixOptionsFlow:
+        """Return the options flow."""
+        return LibrusApixOptionsFlow()
+
     async def _async_check_login(self, data: dict[str, Any]) -> str | None:
         """Log in and read the student name. Return an error key or None."""
         api = LibrusApi(
@@ -166,3 +220,20 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
             return "unknown"
         self._title = info.name
         return None
+
+
+class LibrusApixOptionsFlow(OptionsFlowWithReload):
+    """Change the settings; the entry reloads after saving."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show the settings with the current values."""
+        if user_input is not None:
+            return self.async_create_entry(data=settings_options(user_input))
+        return self.async_show_form(
+            step_id="init",
+            data_schema=settings_schema(
+                {**DEFAULT_OPTIONS, **self.config_entry.options}
+            ),
+        )

@@ -266,3 +266,129 @@ async def test_flow_against_a_mock_server(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Zofia Testowa"
     assert requests_mock.call_count == 1
+
+
+async def _loaded_entry(hass: HomeAssistant, **options: int) -> MockConfigEntry:
+    """Add and set up an entry for mock A."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Zofia Testowa",
+        unique_id="zofia.testowa",
+        data={
+            CONF_USERNAME: "zofia.testowa",
+            CONF_PASSWORD: "old",
+            CONF_SERVER_URL: MOCK_URL,
+        },
+        options={**DEFAULT_OPTIONS, **options},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_reauth_updates_the_password_and_reloads(
+    hass: HomeAssistant, mock_api: MagicMock, mock_setup_entry: AsyncMock
+) -> None:
+    """A correct login of the same account updates the entry and reloads it."""
+    entry = await _loaded_entry(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    assert result["description_placeholders"] == {"name": "Zofia Testowa"}
+
+    result = await _configure(
+        hass,
+        result["flow_id"],
+        {CONF_USERNAME: " Zofia.Testowa ", CONF_PASSWORD: "new"},
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data == {
+        CONF_USERNAME: "Zofia.Testowa",
+        CONF_PASSWORD: "new",
+        CONF_SERVER_URL: MOCK_URL,
+    }
+    mock_api.assert_called_once_with(hass, "Zofia.Testowa", "new", base_url=MOCK_URL)
+    assert len(mock_setup_entry.mock_calls) == 2
+
+
+async def test_reauth_with_another_login_aborts(
+    hass: HomeAssistant, mock_api: MagicMock, mock_setup_entry: AsyncMock
+) -> None:
+    """Another account aborts with unique_id_mismatch; the entry stays as it was."""
+    entry = await _loaded_entry(hass)
+    result = await entry.start_reauth_flow(hass)
+
+    result = await _configure(
+        hass, result["flow_id"], {CONF_USERNAME: "other.student", CONF_PASSWORD: "x"}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unique_id_mismatch"
+    assert entry.data[CONF_PASSWORD] == "old"
+    mock_api.assert_not_called()
+
+
+async def test_reauth_error_is_shown_and_can_be_fixed(
+    hass: HomeAssistant, mock_api: MagicMock, mock_setup_entry: AsyncMock
+) -> None:
+    """A wrong password shows invalid_auth; the next try succeeds."""
+    entry = await _loaded_entry(hass)
+    result = await entry.start_reauth_flow(hass)
+    mock_api.return_value.async_call.side_effect = LibrusAuthError("wrong")
+    login = {CONF_USERNAME: "zofia.testowa", CONF_PASSWORD: "typo"}
+
+    result = await _configure(hass, result["flow_id"], login)
+    assert result["step_id"] == "reauth_confirm"
+    assert result["errors"] == {"base": "invalid_auth"}
+
+    mock_api.return_value.async_call.side_effect = None
+    result = await _configure(hass, result["flow_id"], login)
+    assert result["reason"] == "reauth_successful"
+
+
+async def test_options_show_current_values_and_saving_reloads(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """The form starts with the current values; saving stores them and reloads."""
+    entry = await _loaded_entry(hass, **{CONF_INTERVAL_GRADES: 30, CONF_TIMEFRAME: 3})
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    # An empty submit keeps the pre-filled values.
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+    assert entry.options == {
+        **DEFAULT_OPTIONS,
+        CONF_INTERVAL_GRADES: 30,
+        CONF_TIMEFRAME: 3,
+    }
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {**entry.options, CONF_INTERVAL_MESSAGES: 45, CONF_MESSAGE_COUNT: 50},
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_INTERVAL_MESSAGES] == 45
+    assert entry.options[CONF_MESSAGE_COUNT] == 50
+    assert len(mock_setup_entry.mock_calls) == 2
+
+
+async def test_options_out_of_range_are_rejected(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """The options use the same limits as the setup."""
+    entry = await _loaded_entry(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], {**DEFAULT_OPTIONS, CONF_INTERVAL_GRADES: 5}
+        )

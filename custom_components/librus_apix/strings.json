@@ -46,6 +46,18 @@
           "timeframe": "The current month plus this many months (0–6).",
           "message_count": "How many of the last messages are read (1–100)."
         }
+      },
+      "reauth_confirm": {
+        "title": "Log in again",
+        "description": "Librus no longer accepts the password of {name}. Enter the login and the current password of the same account.",
+        "data": {
+          "username": "Login",
+          "password": "Password"
+        },
+        "data_description": {
+          "username": "Login of the same Librus Synergia account.",
+          "password": "Current password of this account."
+        }
       }
     },
     "error": {
@@ -56,7 +68,35 @@
       "unknown": "Unexpected error. See the Home Assistant log."
     },
     "abort": {
-      "already_configured": "This login is already set up."
+      "already_configured": "This login is already set up.",
+      "reauth_successful": "The login was updated.",
+      "unique_id_mismatch": "This login belongs to a different account. Use the login of this entry."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Settings",
+        "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. The integration reloads after saving.",
+        "data": {
+          "interval_student": "Student info",
+          "interval_grades": "Grades",
+          "interval_messages": "Messages",
+          "interval_announcements": "Announcements",
+          "interval_schedule": "Schedule",
+          "timeframe": "Schedule months ahead",
+          "message_count": "Number of messages"
+        },
+        "data_description": {
+          "interval_student": "Minutes between updates of the student info and lucky number (10–1440).",
+          "interval_grades": "Minutes between updates of the grades (10–1440).",
+          "interval_messages": "Minutes between updates of the message list (10–1440).",
+          "interval_announcements": "Minutes between updates of the announcements (10–1440).",
+          "interval_schedule": "Minutes between updates of the schedule (10–1440).",
+          "timeframe": "The current month plus this many months (0–6).",
+          "message_count": "How many of the last messages are read (1–100)."
+        }
+      }
     }
   }
 }

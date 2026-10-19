@@ -46,6 +46,18 @@
           "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
           "message_count": "Ile ostatnich wiadomości czytać (1–100)."
         }
+      },
+      "reauth_confirm": {
+        "title": "Zaloguj ponownie",
+        "description": "Librus nie przyjmuje już hasła dla {name}. Podaj login i aktualne hasło tego samego konta.",
+        "data": {
+          "username": "Login",
+          "password": "Hasło"
+        },
+        "data_description": {
+          "username": "Login tego samego konta Librus Synergia.",
+          "password": "Aktualne hasło do tego konta."
+        }
       }
     },
     "error": {
@@ -56,7 +68,35 @@
       "unknown": "Nieoczekiwany błąd. Szczegóły w logu Home Assistant."
     },
     "abort": {
-      "already_configured": "Ten login jest już skonfigurowany."
+      "already_configured": "Ten login jest już skonfigurowany.",
+      "reauth_successful": "Dane logowania zostały zaktualizowane.",
+      "unique_id_mismatch": "Ten login należy do innego konta. Użyj loginu tego wpisu."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ustawienia",
+        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Integracja przeładuje się po zapisaniu.",
+        "data": {
+          "interval_student": "Dane ucznia",
+          "interval_grades": "Oceny",
+          "interval_messages": "Wiadomości",
+          "interval_announcements": "Ogłoszenia",
+          "interval_schedule": "Terminarz",
+          "timeframe": "Miesiące terminarza do przodu",
+          "message_count": "Liczba wiadomości"
+        },
+        "data_description": {
+          "interval_student": "Minuty między odświeżeniami danych ucznia i szczęśliwego numerka (10–1440).",
+          "interval_grades": "Minuty między odświeżeniami ocen (10–1440).",
+          "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
+          "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",
+          "interval_schedule": "Minuty między odświeżeniami terminarza (10–1440).",
+          "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
+          "message_count": "Ile ostatnich wiadomości czytać (1–100)."
+        }
+      }
     }
   }
 }
