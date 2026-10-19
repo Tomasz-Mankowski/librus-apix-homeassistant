@@ -54,7 +54,7 @@
     },
     "calendar": {
       "schedule": {
-        "default": "mdi:calendar-school"
+        "default": "mdi:calendar-text"
       }
     }
   },
