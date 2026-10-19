@@ -9,16 +9,34 @@ from collections.abc import Iterable
 from typing import Any
 
 from homeassistant.components.event import EventEntity, EventEntityDescription
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import LibrusCoordinator
+from .coordinator import (
+    LibrusConfigEntry,
+    LibrusCoordinator,
+    MessagesCoordinator,
+    MessagesData,
+    message_details,
+)
 from .entity import LibrusEntity
 
 ATTR_STUDENT = "student"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 
+EVENT_NEW_MESSAGE = "new_message"
+
 # Coordinators fetch the data; entities never poll.
 PARALLEL_UPDATES = 0
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: LibrusConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Add the event entities of the student."""
+    async_add_entities([MessagesEvent(entry.runtime_data.messages)])
 
 
 class LibrusEventEntity[C: LibrusCoordinator[Any]](LibrusEntity[C], EventEntity):
@@ -61,3 +79,25 @@ class LibrusEventEntity[C: LibrusCoordinator[Any]](LibrusEntity[C], EventEntity)
     def _events(self, data: Any) -> Iterable[tuple[str, dict[str, Any]]]:
         """Return (event type, event data) for each new or changed item."""
         raise NotImplementedError
+
+
+class MessagesEvent(LibrusEventEntity[MessagesCoordinator]):
+    """new_message for each new received message (details, no body)."""
+
+    def __init__(self, coordinator: MessagesCoordinator) -> None:
+        """Create the messages event entity."""
+        super().__init__(
+            coordinator,
+            EventEntityDescription(
+                key="messages",
+                translation_key="messages",
+                event_types=[EVENT_NEW_MESSAGE],
+            ),
+        )
+
+    def _events(self, data: MessagesData) -> Iterable[tuple[str, dict[str, Any]]]:
+        return [
+            (EVENT_NEW_MESSAGE, message_details(change.item))
+            for change in data.changes
+            if change.kind == "new"
+        ]

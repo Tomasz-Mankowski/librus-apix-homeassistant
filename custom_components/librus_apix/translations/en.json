@@ -118,6 +118,26 @@
       },
       "lucky_number": {
         "name": "Lucky number"
+      },
+      "messages": {
+        "name": "Messages",
+        "state_attributes": {
+          "messages": {
+            "name": "Messages"
+          }
+        }
+      }
+    },
+    "event": {
+      "messages": {
+        "name": "Messages",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_message": "New message"
+            }
+          }
+        }
       }
     }
   },

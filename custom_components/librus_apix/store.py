@@ -34,6 +34,10 @@ class LibrusStore:
         """Save the document after SAVE_DELAY seconds (and on shutdown)."""
         self._store.async_delay_save(lambda: self.data, SAVE_DELAY)
 
+    async def async_flush(self) -> None:
+        """Save the document now (on unload, before a reload reads it)."""
+        await self._store.async_save(self.data)
+
     async def async_remove(self) -> None:
         """Delete the store file."""
         await self._store.async_remove()

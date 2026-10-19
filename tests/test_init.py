@@ -43,10 +43,10 @@ def _entity_id(hass: HomeAssistant, entry: MockConfigEntry, key: str) -> str:
 
 
 @pytest.mark.usefixtures("mock_server")
-async def test_setup_creates_one_device_and_six_sensors(
+async def test_setup_creates_one_device_with_its_entities(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:
-    """One student device with the six information sensors and their values."""
+    """One student device: six information sensors with their values, messages."""
     await _setup(hass, config_entry)
     assert config_entry.state is ConfigEntryState.LOADED
 
@@ -62,7 +62,9 @@ async def test_setup_creates_one_device_and_six_sensors(
     entities = er.async_entries_for_config_entry(
         er.async_get(hass), config_entry.entry_id
     )
-    assert len(entities) == 6
+    assert sorted(entity.unique_id.split("_", 1)[1] for entity in entities) == sorted(
+        [*EXPECTED, "messages", "messages"]
+    )
     assert {entity.device_id for entity in entities} == {device.id}
     for key, (name, _, value) in EXPECTED.items():
         state = hass.states.get(_entity_id(hass, config_entry, key))
@@ -103,9 +105,15 @@ async def test_interval_comes_from_the_options(
 async def test_unload_and_reload(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:
-    """Unload closes the session; reload brings back the same six entities."""
+    """Unload closes the session; reload brings back the same entities."""
     await _setup(hass, config_entry)
-    entity_ids = {_entity_id(hass, config_entry, key) for key in EXPECTED}
+    entity_ids = {
+        entity.entity_id
+        for entity in er.async_entries_for_config_entry(
+            er.async_get(hass), config_entry.entry_id
+        )
+    }
+    assert len(entity_ids) == 8
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)
@@ -169,7 +177,7 @@ async def test_store_is_loaded_and_removed_with_the_entry(
     hass_storage[key] = {"version": 1, "key": key, "data": {"seen": {"a": [1]}}}
 
     await _setup(hass, config_entry)
-    assert config_entry.runtime_data.store.data == {"seen": {"a": [1]}}
+    assert config_entry.runtime_data.store.data["seen"] == {"a": [1]}
 
     await hass.config_entries.async_remove(config_entry.entry_id)
     await hass.async_block_till_done()

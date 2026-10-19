@@ -30,3 +30,8 @@ class LibrusEntity[C: LibrusCoordinator[Any]](CoordinatorEntity[C]):
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=entry.data.get(CONF_SERVER_URL, LIBRUS_URL),
         )
+
+    @property
+    def available(self) -> bool:
+        """Available after the first successful poll of the coordinator."""
+        return super().available and self.coordinator.data is not None

@@ -118,6 +118,26 @@
       },
       "lucky_number": {
         "name": "Szczęśliwy numerek"
+      },
+      "messages": {
+        "name": "Wiadomości",
+        "state_attributes": {
+          "messages": {
+            "name": "Wiadomości"
+          }
+        }
+      }
+    },
+    "event": {
+      "messages": {
+        "name": "Wiadomości",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "new_message": "Nowa wiadomość"
+            }
+          }
+        }
       }
     }
   },

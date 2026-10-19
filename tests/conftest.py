@@ -19,7 +19,7 @@ from custom_components.librus_apix.request_queue import (
     RequestQueue,
 )
 
-from .common import MOCK_URL, info_page
+from .common import MOCK_URL, FakeServer
 
 
 @pytest.fixture(autouse=True)
@@ -46,10 +46,9 @@ def mock_setup_entry() -> Generator[AsyncMock]:
 
 
 @pytest.fixture
-def mock_server(requests_mock: rm.Mocker) -> rm.Mocker:
-    """Serve the student information page of mock A."""
-    requests_mock.get(f"{MOCK_URL}/informacja", text=info_page())
-    return requests_mock
+def mock_server(requests_mock: rm.Mocker) -> FakeServer:
+    """Serve the Synergia pages of mock A (student info, messages)."""
+    return FakeServer(requests_mock)
 
 
 @pytest.fixture

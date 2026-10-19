@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.core import HomeAssistant
@@ -10,8 +11,15 @@ from homeassistant.helpers.typing import StateType
 
 from librus_apix.student_information import StudentInformation
 
-from .coordinator import LibrusConfigEntry, StudentInfoCoordinator
+from .coordinator import (
+    LibrusConfigEntry,
+    MessagesCoordinator,
+    StudentInfoCoordinator,
+    message_details,
+)
 from .entity import LibrusEntity
+
+ATTR_MESSAGES = "messages"
 
 # Coordinators fetch the data; entities never poll.
 PARALLEL_UPDATES = 0
@@ -64,9 +72,14 @@ async def async_setup_entry(
     entry: LibrusConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Add the student sensors."""
-    coordinator = entry.runtime_data.student
-    async_add_entities(StudentSensor(coordinator, desc) for desc in STUDENT_SENSORS)
+    """Add the student and messages sensors."""
+    data = entry.runtime_data
+    async_add_entities(
+        [
+            *(StudentSensor(data.student, desc) for desc in STUDENT_SENSORS),
+            MessagesSensor(data.messages),
+        ]
+    )
 
 
 class StudentSensor(LibrusEntity[StudentInfoCoordinator], SensorEntity):
@@ -78,3 +91,29 @@ class StudentSensor(LibrusEntity[StudentInfoCoordinator], SensorEntity):
     def native_value(self) -> StateType:
         """Return the field value."""
         return self.entity_description.value_fn(self.coordinator.data)
+
+
+class MessagesSensor(LibrusEntity[MessagesCoordinator], SensorEntity):
+    """Unread message count; the last N messages (no bodies) as an attribute."""
+
+    # The list can be large: keep it out of the recorder (16 KB attribute limit).
+    _unrecorded_attributes = frozenset({ATTR_MESSAGES})
+
+    def __init__(self, coordinator: MessagesCoordinator) -> None:
+        """Create the messages sensor."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(key="messages", translation_key="messages"),
+        )
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of unread messages."""
+        return sum(message.unread for message in self.coordinator.data.messages)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the message list."""
+        return {
+            ATTR_MESSAGES: [message_details(m) for m in self.coordinator.data.messages]
+        }

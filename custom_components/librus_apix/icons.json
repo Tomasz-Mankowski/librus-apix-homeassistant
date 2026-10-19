@@ -18,6 +18,14 @@
       },
       "lucky_number": {
         "default": "mdi:clover"
+      },
+      "messages": {
+        "default": "mdi:email-outline"
+      }
+    },
+    "event": {
+      "messages": {
+        "default": "mdi:email-alert-outline"
       }
     }
   }
