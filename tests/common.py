@@ -1,6 +1,7 @@
 """Shared test data: a fake Synergia server for requests-mock."""
 
 from dataclasses import dataclass, field
+import html
 import re
 from typing import Any
 from urllib.parse import parse_qs
@@ -152,17 +153,176 @@ def announcements_page(items: list[FakeAnnouncement]) -> str:
 
 
 @dataclass
+class FakeGrade:
+    """A regular grade; ``correction`` is the grade that corrects it."""
+
+    id: int
+    grade: str
+    category: str = "Kartkówka"
+    date: str = "2026-10-01"
+    weight: int = 1
+    counts: bool = True
+    comment: str = ""
+    correction: FakeGrade | None = None
+
+
+@dataclass
+class FakeFinal:
+    """A semester (I, II) or year (R) grade, final or proposed."""
+
+    id: int
+    column: str
+    grade: str
+    proposed: bool = False
+    date: str = "2026-10-15"
+
+
+@dataclass
+class FakeSubject:
+    """A row of the grades table."""
+
+    name: str
+    teacher: str = "Adam Rachunek"
+    semester1: list[FakeGrade] = field(default_factory=list)
+    semester2: list[FakeGrade] = field(default_factory=list)
+    averages: tuple[str, str, str] = ("-", "-", "-")
+    finals: list[FakeFinal] = field(default_factory=list)
+
+
+def default_subjects() -> list[FakeSubject]:
+    """Subjects like mock A: Librus shows the averages."""
+    return [
+        FakeSubject(
+            "Matematyka",
+            semester1=[
+                FakeGrade(1101, "5", weight=2),
+                FakeGrade(1102, "4+", "Odpowiedź ustna", "2026-09-10"),
+                FakeGrade(
+                    1103,
+                    "1",
+                    "Sprawdzian",
+                    "2026-09-20",
+                    weight=3,
+                    comment="Działania",
+                    correction=FakeGrade(
+                        1104, "4", "Sprawdzian", "2026-09-30", weight=3
+                    ),
+                ),
+                FakeGrade(1105, "np", "Nieprzygotowanie", weight=0, counts=False),
+            ],
+            averages=("3.69", "-", "3.69"),
+            finals=[FakeFinal(1190, "I", "4", proposed=True)],
+        ),
+        FakeSubject(
+            "Język polski",
+            teacher="Ewa Ortografia",
+            semester1=[FakeGrade(1201, "4", "Dyktando", weight=2)],
+            averages=("4.00", "-", "4.00"),
+        ),
+        FakeSubject("Plastyka", teacher="Anna Kolorowa"),
+    ]
+
+
+def _grade_box(grade: FakeGrade, teacher: str, extra: str = "") -> str:
+    parts = [
+        f"Kategoria: {grade.category}",
+        f"Data: {grade.date} (pon.)",
+        f"Nauczyciel: {teacher}",
+        f"Licz do średniej: {'tak' if grade.counts else 'nie'}",
+    ]
+    if grade.weight:
+        parts.append(f"Waga: {grade.weight}")
+    if extra:
+        parts.append(extra)
+    parts.append(f"Dodał: {teacher}")
+    title = "<br>".join(parts)
+    if grade.comment:
+        title += f"<br/><br/>Komentarz: {grade.comment}"
+    return (
+        f'<span class="grade-box"><a href="/przegladaj_oceny/szczegoly/{grade.id}" '
+        f'title="{html.escape(title)}">{grade.grade}</a></span>'
+    )
+
+
+def _grade_cell(grades: list[FakeGrade], teacher: str) -> str:
+    boxes = []
+    for grade in grades:
+        if grade.correction:
+            note = f"Poprawa oceny: {grade.grade} ({grade.category})"
+            boxes.append(
+                f"<span>[{_grade_box(grade, teacher)}"
+                f"{_grade_box(grade.correction, teacher, note)}]</span>"
+            )
+        else:
+            boxes.append(_grade_box(grade, teacher))
+    return "".join(boxes) or "Brak ocen"
+
+
+FINAL_CATEGORIES = {
+    ("I", False): "Śródroczna",
+    ("I", True): "Proponowana (śródroczna)",
+    ("II", False): "Końcowa (okres 2)",
+    ("II", True): "Proponowana (okres 2)",
+    ("R", False): "Roczna",
+    ("R", True): "Proponowana (roczna)",
+}
+
+
+def _final_cell(subject: FakeSubject, column: str) -> str:
+    boxes = []
+    for final in subject.finals:
+        if final.column != column:
+            continue
+        title = (
+            f"Kategoria: {FINAL_CATEGORIES[column, final.proposed]}<br>"
+            f"Data: {final.date} (śr.)<br>Nauczyciel: {subject.teacher}"
+        )
+        boxes.append(
+            f'<span class="grade-box"><a href="/przegladaj_oceny/szczegoly/{final.id}" '
+            f'title="{html.escape(title)}">{final.grade}</a></span>'
+        )
+    return "".join(boxes) or "-"
+
+
+def grades_page(subjects: list[FakeSubject]) -> str:
+    """Return the grades page like Synergia renders it."""
+    rows = []
+    for i, subject in enumerate(subjects):
+        cells = [
+            '<td class="center micro screen-only"><img src="/t.png"></td>',
+            f"<td>{subject.name}</td>",
+        ]
+        for grades, average, column in (
+            (subject.semester1, subject.averages[0], "I"),
+            (subject.semester2, subject.averages[1], "II"),
+        ):
+            cells.append(f"<td>{_grade_cell(grades, subject.teacher)}</td>")
+            cells.append(f'<td class="right">{average}</td>')
+            cells.append(f'<td class="center">{_final_cell(subject, column)}</td>')
+        cells.append(f'<td class="right">{subject.averages[2]}</td>')
+        cells.append(f'<td class="center">{_final_cell(subject, "R")}</td>')
+        rows.append(f'<tr class="line{i % 2}">{"".join(cells)}</tr>')
+        rows.append(f'<tr class="line{i % 2}" id="przedmioty_{i}_node"><td></td></tr>')
+    return f'<table class="decorated stretch"><tbody>{"".join(rows)}</tbody></table>'
+
+
+@dataclass
 class FakeServer:
     """Synergia pages of one student, served through requests-mock."""
 
     mocker: rm.Mocker
     messages: list[FakeMessage] = field(default_factory=default_messages)
     announcements: list[FakeAnnouncement] = field(default_factory=default_announcements)
+    subjects: list[FakeSubject] = field(default_factory=default_subjects)
     lucky: str | None = "7"
 
     def __post_init__(self) -> None:
         """Register the pages."""
         self.mocker.get(f"{MOCK_URL}/informacja", text=self._info)
+        self.mocker.post(
+            f"{MOCK_URL}/przegladaj_oceny/uczen",
+            text=lambda request, context: grades_page(self.subjects),
+        )
         self.mocker.get(
             f"{MOCK_URL}/ogloszenia",
             text=lambda request, context: announcements_page(self.announcements),

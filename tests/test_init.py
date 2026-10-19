@@ -63,7 +63,11 @@ async def test_setup_creates_one_device_with_its_entities(
         er.async_get(hass), config_entry.entry_id
     )
     assert sorted(entity.unique_id.split("_", 1)[1] for entity in entities) == sorted(
-        [*EXPECTED, "messages", "messages", "announcements", "announcements"]
+        [
+            *EXPECTED,
+            *("messages", "messages", "announcements", "announcements"),
+            *("grades_matematyka", "grades_jezyk_polski", "grades_plastyka"),
+        ]
     )
     assert {entity.device_id for entity in entities} == {device.id}
     for key, (name, _, value) in EXPECTED.items():
@@ -113,7 +117,7 @@ async def test_unload_and_reload(
             er.async_get(hass), config_entry.entry_id
         )
     }
-    assert len(entity_ids) == 10
+    assert len(entity_ids) == 13
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)

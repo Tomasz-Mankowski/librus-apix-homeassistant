@@ -134,6 +134,33 @@
             "name": "Ogłoszenia"
           }
         }
+      },
+      "subject_grades": {
+        "name": "{subject}",
+        "state_attributes": {
+          "subject": {
+            "name": "Przedmiot"
+          },
+          "semester": {
+            "name": "Semestr"
+          },
+          "average_source": {
+            "name": "Źródło średniej",
+            "state": {
+              "librus": "Librus",
+              "calculated": "Obliczona"
+            }
+          },
+          "averages": {
+            "name": "Średnie"
+          },
+          "grades": {
+            "name": "Oceny"
+          },
+          "final_grades": {
+            "name": "Oceny śródroczne i roczne"
+          }
+        }
       }
     },
     "event": {

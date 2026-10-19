@@ -134,6 +134,33 @@
             "name": "Announcements"
           }
         }
+      },
+      "subject_grades": {
+        "name": "{subject}",
+        "state_attributes": {
+          "subject": {
+            "name": "Subject"
+          },
+          "semester": {
+            "name": "Semester"
+          },
+          "average_source": {
+            "name": "Average source",
+            "state": {
+              "librus": "Librus",
+              "calculated": "Calculated"
+            }
+          },
+          "averages": {
+            "name": "Averages"
+          },
+          "grades": {
+            "name": "Grades"
+          },
+          "final_grades": {
+            "name": "Semester and year grades"
+          }
+        }
       }
     },
     "event": {

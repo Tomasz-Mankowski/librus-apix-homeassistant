@@ -24,6 +24,9 @@
       },
       "announcements": {
         "default": "mdi:bullhorn-outline"
+      },
+      "subject_grades": {
+        "default": "mdi:book-education-outline"
       }
     },
     "event": {

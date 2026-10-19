@@ -21,8 +21,10 @@ from librus_apix.messages import Message, get_received, parse, unwrap_message_da
 from librus_apix.student_information import StudentInformation, get_student_information
 
 from .api import LibrusApi
+from .average import AverageRules
 from .const import (
     CONF_INTERVAL_ANNOUNCEMENTS,
+    CONF_INTERVAL_GRADES,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_STUDENT,
     CONF_MESSAGE_COUNT,
@@ -30,6 +32,7 @@ from .const import (
     DOMAIN,
 )
 from .exceptions import LibrusAuthError, LibrusError, LibrusUnavailableError
+from .grades import GradesPage, read_grades
 from .store import LibrusStore
 from .tracker import Change, TrackedItem, Tracker
 
@@ -51,6 +54,7 @@ class LibrusData:
     student: StudentInfoCoordinator
     messages: MessagesCoordinator
     announcements: AnnouncementsCoordinator
+    grades: GradesCoordinator
 
 
 type LibrusConfigEntry = ConfigEntry[LibrusData]
@@ -311,3 +315,17 @@ class AnnouncementsCoordinator(LibrusCoordinator[AnnouncementsData]):
             TrackedItem(announcement_id(a), {}, a) for a in reversed(announcements)
         )
         return AnnouncementsData(announcements, changes)
+
+
+class GradesCoordinator(LibrusCoordinator[GradesPage]):
+    """Grades, semester/final grades and averages (one page per poll)."""
+
+    def __init__(
+        self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
+    ) -> None:
+        """Use the grades interval and the average rules."""
+        super().__init__(hass, entry, api, "grades", CONF_INTERVAL_GRADES)
+        self.rules = AverageRules()
+
+    async def _async_fetch(self) -> GradesPage:
+        return await self.api.async_call(read_grades)
