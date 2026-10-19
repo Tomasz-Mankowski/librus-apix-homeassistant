@@ -33,21 +33,13 @@ from custom_components.librus_apix.exceptions import (
     LibrusUnavailableError,
 )
 
+from .common import MOCK_URL, info_page
+
 STUDENT = StudentInformation(
     "Zofia Testowa", "5a", 14, "Magdalena Przykładowa", "SP 999", 7
 )
 LOGIN = {CONF_USERNAME: "zofia.testowa", CONF_PASSWORD: "secret", SECTION_DEVELOPER: {}}
-MOCK_URL = "http://librus-mock-a:8000"
-INFO_PAGE = (
-    '<span class="luckyNumber"><b>7</b></span>'
-    '<table class="decorated big center"><tbody>'
-    '<tr class="line0"><th>Uczeń</th><td>Zofia Testowa</td></tr>'
-    '<tr class="line1"><th>Klasa</th><td>5a</td></tr>'
-    '<tr class="line0"><th>Nr w dzienniku</th><td>14</td></tr>'
-    '<tr class="line1"><th>Wychowawca</th><td>Magdalena Przykładowa</td></tr>'
-    '<tr class="line0"><th>Szkoła</th><td>SP 999</td></tr>'
-    "</tbody></table>"
-)
+INFO_PAGE = info_page()
 
 
 @pytest.fixture

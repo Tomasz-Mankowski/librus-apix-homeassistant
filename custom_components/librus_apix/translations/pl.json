@@ -98,5 +98,41 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "student": {
+        "name": "Uczeń"
+      },
+      "class_name": {
+        "name": "Klasa"
+      },
+      "tutor": {
+        "name": "Wychowawca"
+      },
+      "school": {
+        "name": "Szkoła"
+      },
+      "student_number": {
+        "name": "Numer w dzienniku"
+      },
+      "lucky_number": {
+        "name": "Szczęśliwy numerek"
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "Librus odrzucił logowanie. Zaloguj się ponownie."
+    },
+    "unavailable": {
+      "message": "Librus odrzucił zapytanie. Kolejna próba później."
+    },
+    "maintenance": {
+      "message": "Librus ma przerwę techniczną. Kolejna próba później."
+    },
+    "update_failed": {
+      "message": "Nie można odczytać danych z Librusa: {error}"
+    }
   }
 }

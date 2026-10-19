@@ -70,7 +70,7 @@ def _url_overrides(base_url: str) -> dict[str, str]:
 
 def _short(err: Exception) -> str:
     """Return a short error text (library messages can contain whole pages)."""
-    return str(err)[:200]
+    return str(err)[:200] or type(err).__name__
 
 
 def _check_status(response: requests.Response, *args: Any, **kwargs: Any) -> None:
@@ -232,6 +232,10 @@ class LibrusApi:
         except LibrusSessionExpiredError as err:
             self._logged_in = False
             raise LibrusAuthError("Session rejected right after login") from err
+
+    def close(self) -> None:
+        """Close the HTTP session (executor)."""
+        self.client._session.close()
 
     def _login(self) -> None:
         """Get new session cookies (executor)."""

@@ -9,6 +9,7 @@ import pytest
 
 from custom_components.librus_apix.exceptions import LibrusUnavailableError
 from custom_components.librus_apix.request_queue import (
+    DATA_REQUEST_QUEUE,
     RequestQueue,
     async_get_request_queue,
 )
@@ -38,8 +39,13 @@ async def _fail(queue: RequestQueue, host: str, hint: float | None = None) -> fl
 
 
 async def test_one_queue_per_instance(hass: HomeAssistant) -> None:
-    """All entries get the same queue."""
-    assert async_get_request_queue(hass) is async_get_request_queue(hass)
+    """The first entry creates the queue; all entries get the same one."""
+    hass.data.pop(DATA_REQUEST_QUEUE)
+
+    queue = async_get_request_queue(hass)
+
+    assert isinstance(queue, RequestQueue)
+    assert async_get_request_queue(hass) is queue
 
 
 async def test_jobs_run_one_at_a_time_with_gap(hass: HomeAssistant) -> None:

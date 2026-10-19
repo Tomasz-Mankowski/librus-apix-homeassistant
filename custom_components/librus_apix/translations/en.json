@@ -98,5 +98,41 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "student": {
+        "name": "Student"
+      },
+      "class_name": {
+        "name": "Class"
+      },
+      "tutor": {
+        "name": "Tutor"
+      },
+      "school": {
+        "name": "School"
+      },
+      "student_number": {
+        "name": "Student number"
+      },
+      "lucky_number": {
+        "name": "Lucky number"
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "Librus rejected the login. Log in again."
+    },
+    "unavailable": {
+      "message": "Librus refused the request. The next try comes later."
+    },
+    "maintenance": {
+      "message": "Librus is in maintenance. The next try comes later."
+    },
+    "update_failed": {
+      "message": "Cannot read data from Librus: {error}"
+    }
   }
 }

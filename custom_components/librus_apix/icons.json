@@ -1,0 +1,24 @@
+{
+  "entity": {
+    "sensor": {
+      "student": {
+        "default": "mdi:account-school"
+      },
+      "class_name": {
+        "default": "mdi:google-classroom"
+      },
+      "tutor": {
+        "default": "mdi:human-male-board"
+      },
+      "school": {
+        "default": "mdi:school"
+      },
+      "student_number": {
+        "default": "mdi:numeric"
+      },
+      "lucky_number": {
+        "default": "mdi:clover"
+      }
+    }
+  }
+}
