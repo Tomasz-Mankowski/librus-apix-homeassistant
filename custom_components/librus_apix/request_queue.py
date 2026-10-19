@@ -76,6 +76,14 @@ class RequestQueue:
         _LOGGER.debug("Backoff for %s: %.0f s (failure %d)", host, delay, failures)
         return delay
 
+    def diagnostics(self) -> dict[str, dict[str, float]]:
+        """Servers in backoff: failures in a row and seconds until the next try."""
+        now = self._clock()
+        return {
+            host: {"failures": b.failures, "seconds_left": max(0, round(b.until - now))}
+            for host, b in self._backoff.items()
+        }
+
     @contextmanager
     def request_slot(self) -> Iterator[None]:
         """Wait for the gap before one HTTP request. Runs in the job's thread."""

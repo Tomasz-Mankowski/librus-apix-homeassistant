@@ -73,6 +73,26 @@ def _short(err: Exception) -> str:
     return str(err)[:200] or type(err).__name__
 
 
+def _request_error(err: requests.RequestException) -> str:
+    """Server and cause only, e.g. "no connection to host:8000 (NameResolutionError)".
+
+    The full requests/urllib3 text repeats the URL and the whole retry chain.
+    """
+    url = err.request.url if err.request is not None else None
+    host = (urlsplit(url).netloc if url else "") or "Librus"
+    if isinstance(err, requests.Timeout):
+        return f"no answer from {host} ({type(err).__name__})"
+    if isinstance(err, requests.ConnectionError):
+        cause = err.args[0] if err.args else err
+        # MaxRetryError keeps the real cause in .reason.
+        cause = getattr(cause, "reason", None) or cause
+        name = (
+            type(cause).__name__ if isinstance(cause, Exception) else "ConnectionError"
+        )
+        return f"no connection to {host} ({name})"
+    return f"request to {host} failed ({type(err).__name__})"
+
+
 def _check_status(response: requests.Response, *args: Any, **kwargs: Any) -> None:
     """Session response hook: raise when the server refuses service."""
     status = response.status_code
@@ -173,7 +193,7 @@ def _mapped_errors(auth_error: type[LibrusError]) -> Iterator[None]:
     except requests.JSONDecodeError as err:
         raise LibrusParseError(f"Unexpected response: {_short(err)}") from err
     except requests.RequestException as err:
-        raise LibrusConnectionError(_short(err)) from err
+        raise LibrusConnectionError(_request_error(err)) from err
     except (
         ParseError,
         DateError,
@@ -232,6 +252,10 @@ class LibrusApi:
         except LibrusSessionExpiredError as err:
             self._logged_in = False
             raise LibrusAuthError("Session rejected right after login") from err
+
+    def diagnostics(self) -> dict[str, Any]:
+        """Connection state for diagnostics (no credentials, no cookies)."""
+        return {"host": self._host, "mock": self._mock, "logged_in": self._logged_in}
 
     def close(self) -> None:
         """Close the HTTP session (executor)."""

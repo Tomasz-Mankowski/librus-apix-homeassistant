@@ -19,8 +19,9 @@ import pytest
 import requests
 from requests.cookies import MockRequest, MockResponse
 import requests_mock as rm
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 
-from custom_components.librus_apix.api import LibrusApi, LibrusClient
+from custom_components.librus_apix.api import LibrusApi, LibrusClient, _request_error
 from custom_components.librus_apix.const import BACKOFF_START, REQUEST_TIMEOUT
 from custom_components.librus_apix.exceptions import (
     LibrusAuthError,
@@ -368,3 +369,55 @@ async def test_no_secrets_in_logs(
     assert "Logged in to synergia.librus.pl" in caplog.text
     for secret in (USERNAME, PASSWORD, SESSION_ID, SESSION_ID_2):
         assert secret not in caplog.text
+
+
+def _request(url: str = "http://librus-mock-a:8000/informacja") -> requests.Request:
+    return requests.Request("GET", url).prepare()
+
+
+@pytest.mark.parametrize(
+    ("error", "text"),
+    [
+        (
+            requests.ConnectionError(
+                MaxRetryError(None, "/informacja", NewConnectionError(None, "refused")),
+                request=_request(),
+            ),
+            "no connection to librus-mock-a:8000 (NewConnectionError)",
+        ),
+        (
+            requests.ReadTimeout("read timed out", request=_request()),
+            "no answer from librus-mock-a:8000 (ReadTimeout)",
+        ),
+        (requests.ConnectionError("down"), "no connection to Librus (ConnectionError)"),
+        (
+            requests.TooManyRedirects("loop", request=_request()),
+            "request to librus-mock-a:8000 failed (TooManyRedirects)",
+        ),
+    ],
+)
+def test_request_errors_are_short(error: requests.RequestException, text: str) -> None:
+    """Server and cause only, not the whole urllib3 chain."""
+    assert _request_error(error) == text
+
+
+async def test_connection_error_text_reaches_the_coordinator(
+    requests_mock: rm.Mocker, login: Any, api: LibrusApi
+) -> None:
+    """The mapped error carries the short text."""
+    requests_mock.get(
+        urls.INFO_URL,
+        exc=requests.ConnectionError(
+            MaxRetryError(None, "/", NewConnectionError(None, "refused")),
+            request=_request(urls.INFO_URL),
+        ),
+    )
+
+    def func(client: Client) -> None:
+        client.get(urls.INFO_URL)
+
+    with pytest.raises(LibrusConnectionError) as exc:
+        await api.async_call(func)
+    assert str(exc.value) == (
+        f"no connection to {urls.INFO_URL.split('/')[2]} (NewConnectionError)"
+    )
