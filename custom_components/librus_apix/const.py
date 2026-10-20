@@ -1,4 +1,4 @@
-"""Constants for the Librus APIX integration."""
+"""Constants for the HALibrus integration."""
 
 from zoneinfo import ZoneInfo
 

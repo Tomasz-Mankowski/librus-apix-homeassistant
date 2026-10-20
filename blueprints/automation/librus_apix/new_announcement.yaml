@@ -1,5 +1,5 @@
 blueprint:
-  name: Librus APIX - new announcement notification
+  name: HALibrus - new announcement notification
   description: >-
     Sends one notification for each new Librus announcement of the chosen
     students. One poll can bring several announcements: the automation runs in

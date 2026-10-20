@@ -1,4 +1,4 @@
-"""Tests for the Librus APIX config flow."""
+"""Tests for the HALibrus config flow."""
 
 from collections.abc import Generator
 from typing import Any

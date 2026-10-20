@@ -1,5 +1,5 @@
 blueprint:
-  name: Librus APIX - new message notification
+  name: HALibrus - new message notification
   description: >-
     Sends one notification for each new Librus message of the chosen students.
     One poll can bring several messages: the automation runs in queued mode, so

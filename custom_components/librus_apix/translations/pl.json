@@ -302,7 +302,7 @@
       "message": "Nie można odczytać danych z Librusa: {error}"
     },
     "invalid_entity": {
-      "message": "{entity_id} nie jest encją załadowanego wpisu Librus APIX."
+      "message": "{entity_id} nie jest encją załadowanego wpisu HALibrus."
     },
     "unknown_message": {
       "message": "Wiadomości {message_id} nie ma na liście wiadomości tego ucznia."

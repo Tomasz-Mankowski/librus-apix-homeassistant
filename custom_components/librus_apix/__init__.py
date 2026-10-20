@@ -1,4 +1,4 @@
-"""The Librus APIX integration."""
+"""The HALibrus integration."""
 
 import logging
 

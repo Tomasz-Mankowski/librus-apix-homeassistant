@@ -128,7 +128,7 @@ async def test_entity_of_another_integration(
     config_entry: MockConfigEntry,
     entity_id: str,
 ) -> None:
-    """Only entities of a loaded Librus APIX entry are accepted."""
+    """Only entities of a loaded HALibrus entry are accepted."""
     await _setup(hass, config_entry)
     er.async_get(hass).async_get_or_create(
         "sun", "sun", "sun", suggested_object_id="sun"

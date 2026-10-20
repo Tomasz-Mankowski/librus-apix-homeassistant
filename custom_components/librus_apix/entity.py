@@ -27,6 +27,7 @@ class LibrusEntity[C: LibrusCoordinator[Any]](CoordinatorEntity[C]):
             identifiers={(DOMAIN, entry.entry_id)},
             name=entry.title,
             manufacturer="Librus Synergia",
+            model="HALibrus",
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=entry.data.get(CONF_SERVER_URL, LIBRUS_URL),
         )

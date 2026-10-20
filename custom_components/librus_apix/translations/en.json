@@ -302,7 +302,7 @@
       "message": "Cannot read data from Librus: {error}"
     },
     "invalid_entity": {
-      "message": "{entity_id} is not an entity of a loaded Librus APIX entry."
+      "message": "{entity_id} is not an entity of a loaded HALibrus entry."
     },
     "unknown_message": {
       "message": "Message {message_id} is not on the message list of this student."

@@ -1,1 +1,1 @@
-"""Tests for the Librus APIX integration."""
+"""Tests for the HALibrus integration."""

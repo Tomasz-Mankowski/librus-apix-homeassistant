@@ -60,6 +60,7 @@ async def test_setup_creates_one_device_with_its_entities(
     assert device is not None
     assert device.name == "Zofia Testowa"
     assert device.manufacturer == "Librus Synergia"
+    assert device.model == "HALibrus"
     assert device.entry_type is dr.DeviceEntryType.SERVICE
     assert device.configuration_url == MOCK_URL
 

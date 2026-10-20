@@ -1,4 +1,4 @@
-"""Shared fixtures for the Librus APIX tests."""
+"""Shared fixtures for the HALibrus tests."""
 
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch

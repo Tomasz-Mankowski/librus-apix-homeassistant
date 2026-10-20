@@ -3,7 +3,7 @@
 Integracja [HACS](https://hacs.xyz/) dla Home Assistant. Odczytuje dane ucznia z Librus Synergia (oceny, wiadomości, ogłoszenia, terminarz) i udostępnia je jako encje oraz wyzwalacze automatyzacji. Implementacja w sposób minimalny i maksymalnie funkcjonalny. Integracja korzysta z [librus-apix](https://github.com/RustySnek/librus-apix).
 
 > [!IMPORTANT]
-> Projekt nieoficjalny. **Nie jest powiązany z firmą Librus** ani przez nią wspierany. Do logowania używaj tylko swojego prywatnego loginu i hasła do systemu Librus Synergia. Używaj na własną odpowiedzialność. **Autor nie ponosi odpowiedzialności za użycie integracji**, a jakiekolwiek konsekwecje wynikające z korzystania z niej.
+> Projekt nieoficjalny. **Nie jest powiązany z firmą Librus** ani przez nią wspierany. Do logowania używaj tylko swojego prywatnego loginu i hasła do systemu Librus Synergia. Używaj na własną odpowiedzialność. **Autor nie ponosi odpowiedzialności za użycie integracji**, a także jakiekolwiek konsekwecje wynikające z korzystania z niej.
 
 ## Dedykowane karty panelu
 
@@ -36,8 +36,6 @@ Lub ręcznie:
 - Home Assistant 2026.3 lub nowszy.
 - [HACS](https://hacs.xyz/).
 - Login i hasło do Librus Synergia (konto ucznia lub rodzica). Jeden login = jeden uczeń.
-
-
 
 ## Konfiguracja
 

@@ -1,5 +1,5 @@
 blueprint:
-  name: Librus APIX - descriptive grade notification
+  name: HALibrus - descriptive grade notification
   description: >-
     Sends one notification for each new Librus descriptive grade of the chosen
     students. One poll can bring several grades: the automation runs in queued

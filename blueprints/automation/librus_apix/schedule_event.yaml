@@ -1,5 +1,5 @@
 blueprint:
-  name: Librus APIX - schedule notification
+  name: HALibrus - schedule notification
   description: >-
     Sends one notification for each new or changed event in the Librus schedule
     (tests, trips, meetings) of the chosen students. One poll can bring several

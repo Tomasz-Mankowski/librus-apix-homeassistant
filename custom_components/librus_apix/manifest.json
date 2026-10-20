@@ -1,6 +1,6 @@
 {
   "domain": "librus_apix",
-  "name": "Librus APIX",
+  "name": "HALibrus",
   "codeowners": ["@Tomasz-Mankowski"],
   "config_flow": true,
   "documentation": "https://github.com/Tomasz-Mankowski/librus-apix-homeassistant",

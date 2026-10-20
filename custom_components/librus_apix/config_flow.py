@@ -1,4 +1,4 @@
-"""Config flow for the Librus APIX integration."""
+"""Config flow for the HALibrus integration."""
 
 from collections.abc import Mapping
 import logging
@@ -156,7 +156,7 @@ def average_options(user_input: dict[str, Any]) -> dict[str, Any]:
 
 
 class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Librus APIX: login, then settings."""
+    """Handle a config flow for HALibrus: login, then settings."""
 
     VERSION = 1
     # 2: lucky-number and timetable options (1.1.0); see async_migrate_entry

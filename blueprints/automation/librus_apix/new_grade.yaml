@@ -1,5 +1,5 @@
 blueprint:
-  name: Librus APIX - grade notification
+  name: HALibrus - grade notification
   description: >-
     Sends one notification for each new, corrected or changed Librus grade and
     for each semester or year grade (also proposed ones) of the chosen students.
