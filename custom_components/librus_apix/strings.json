@@ -27,7 +27,7 @@
       },
       "settings": {
         "title": "Update settings",
-        "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. You can change this later.",
+        "description": "How often Librus is read, how many months of the schedule and weeks of the timetable are read and how many messages are kept. You can change this later.",
         "data": {
           "interval_student": "Student info",
           "interval_lucky_number": "Lucky number",
@@ -35,7 +35,9 @@
           "interval_messages": "Messages",
           "interval_announcements": "Announcements",
           "interval_schedule": "Schedule",
+          "interval_timetable": "Timetable",
           "timeframe": "Schedule months ahead",
+          "timetable_weeks": "Timetable weeks ahead",
           "message_count": "Number of messages"
         },
         "data_description": {
@@ -45,7 +47,9 @@
           "interval_messages": "Minutes between updates of the message list (10–1440).",
           "interval_announcements": "Minutes between updates of the announcements (10–1440).",
           "interval_schedule": "Minutes between updates of the schedule (10–1440).",
+          "interval_timetable": "Minutes between updates of the timetable (10–1440).",
           "timeframe": "The current month plus this many months (0–6).",
+          "timetable_weeks": "The current week plus this many weeks (0–4). One request per week.",
           "message_count": "How many of the last messages are read (1–100)."
         }
       },
@@ -79,7 +83,7 @@
     "step": {
       "init": {
         "title": "Settings",
-        "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. The integration reloads after saving.",
+        "description": "How often Librus is read, how many months of the schedule and weeks of the timetable are read and how many messages are kept. The integration reloads after saving.",
         "data": {
           "interval_student": "Student info",
           "interval_lucky_number": "Lucky number",
@@ -87,7 +91,9 @@
           "interval_messages": "Messages",
           "interval_announcements": "Announcements",
           "interval_schedule": "Schedule",
+          "interval_timetable": "Timetable",
           "timeframe": "Schedule months ahead",
+          "timetable_weeks": "Timetable weeks ahead",
           "message_count": "Number of messages"
         },
         "data_description": {
@@ -97,7 +103,9 @@
           "interval_messages": "Minutes between updates of the message list (10–1440).",
           "interval_announcements": "Minutes between updates of the announcements (10–1440).",
           "interval_schedule": "Minutes between updates of the schedule (10–1440).",
+          "interval_timetable": "Minutes between updates of the timetable (10–1440).",
           "timeframe": "The current month plus this many months (0–6).",
+          "timetable_weeks": "The current week plus this many weeks (0–4). One request per week.",
           "message_count": "How many of the last messages are read (1–100)."
         }
       },

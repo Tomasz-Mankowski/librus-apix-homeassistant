@@ -15,9 +15,11 @@ from custom_components.librus_apix.const import (
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
+    CONF_INTERVAL_TIMETABLE,
     CONF_MESSAGE_COUNT,
     CONF_SERVER_URL,
     CONF_TIMEFRAME,
+    CONF_TIMETABLE_WEEKS,
     DOMAIN,
 )
 
@@ -32,6 +34,12 @@ OPTIONS_1_0 = {
     CONF_INTERVAL_SCHEDULE: 60,
     CONF_TIMEFRAME: 1,
     CONF_MESSAGE_COUNT: 20,
+}
+# Options added by the migration to minor version 2, with their defaults.
+ADDED_1_1 = {
+    CONF_INTERVAL_LUCKY_NUMBER: 180,
+    CONF_INTERVAL_TIMETABLE: 360,
+    CONF_TIMETABLE_WEEKS: 1,
 }
 
 
@@ -62,21 +70,19 @@ async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
 
 @pytest.mark.usefixtures("mock_server")
 async def test_old_default_moves_to_the_new_default(hass: HomeAssistant) -> None:
-    """Student info 360 → 1440, lucky number 180 added, minor version 2."""
+    """Student info 360 → 1440; lucky number and timetable options added."""
     entry = _entry(hass)
 
     await _setup(hass, entry)
 
     assert entry.state is ConfigEntryState.LOADED
     assert (entry.version, entry.minor_version) == (1, 2)
-    assert entry.options == {
-        **OPTIONS_1_0,
-        CONF_INTERVAL_STUDENT: 1440,
-        CONF_INTERVAL_LUCKY_NUMBER: 180,
-    }
+    assert entry.options == {**OPTIONS_1_0, **ADDED_1_1, CONF_INTERVAL_STUDENT: 1440}
     data = entry.runtime_data
     assert data.student.update_interval == timedelta(minutes=1440)
     assert data.lucky_number.update_interval == timedelta(minutes=180)
+    assert data.timetable.update_interval == timedelta(minutes=360)
+    assert len(data.timetable.data.weeks) == 2
 
 
 @pytest.mark.usefixtures("mock_server")
@@ -89,9 +95,9 @@ async def test_user_value_stays(hass: HomeAssistant) -> None:
     assert entry.minor_version == 2
     assert entry.options == {
         **OPTIONS_1_0,
+        **ADDED_1_1,
         CONF_INTERVAL_STUDENT: 120,
         CONF_INTERVAL_GRADES: 30,
-        CONF_INTERVAL_LUCKY_NUMBER: 180,
     }
 
 

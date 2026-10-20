@@ -27,7 +27,7 @@
       },
       "settings": {
         "title": "Ustawienia odświeżania",
-        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Możesz to zmienić później.",
+        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza i tygodni planu lekcji czytać i ile wiadomości przechowywać. Możesz to zmienić później.",
         "data": {
           "interval_student": "Dane ucznia",
           "interval_lucky_number": "Szczęśliwy numerek",
@@ -35,7 +35,9 @@
           "interval_messages": "Wiadomości",
           "interval_announcements": "Ogłoszenia",
           "interval_schedule": "Terminarz",
+          "interval_timetable": "Plan lekcji",
           "timeframe": "Miesiące terminarza do przodu",
+          "timetable_weeks": "Tygodnie planu lekcji do przodu",
           "message_count": "Liczba wiadomości"
         },
         "data_description": {
@@ -45,7 +47,9 @@
           "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
           "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",
           "interval_schedule": "Minuty między odświeżeniami terminarza (10–1440).",
+          "interval_timetable": "Minuty między odświeżeniami planu lekcji (10–1440).",
           "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
+          "timetable_weeks": "Bieżący tydzień plus tyle kolejnych tygodni (0–4). Jedno zapytanie na tydzień.",
           "message_count": "Ile ostatnich wiadomości czytać (1–100)."
         }
       },
@@ -79,7 +83,7 @@
     "step": {
       "init": {
         "title": "Ustawienia",
-        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Integracja przeładuje się po zapisaniu.",
+        "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza i tygodni planu lekcji czytać i ile wiadomości przechowywać. Integracja przeładuje się po zapisaniu.",
         "data": {
           "interval_student": "Dane ucznia",
           "interval_lucky_number": "Szczęśliwy numerek",
@@ -87,7 +91,9 @@
           "interval_messages": "Wiadomości",
           "interval_announcements": "Ogłoszenia",
           "interval_schedule": "Terminarz",
+          "interval_timetable": "Plan lekcji",
           "timeframe": "Miesiące terminarza do przodu",
+          "timetable_weeks": "Tygodnie planu lekcji do przodu",
           "message_count": "Liczba wiadomości"
         },
         "data_description": {
@@ -97,7 +103,9 @@
           "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
           "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",
           "interval_schedule": "Minuty między odświeżeniami terminarza (10–1440).",
+          "interval_timetable": "Minuty między odświeżeniami planu lekcji (10–1440).",
           "timeframe": "Bieżący miesiąc plus tyle kolejnych miesięcy (0–6).",
+          "timetable_weeks": "Bieżący tydzień plus tyle kolejnych tygodni (0–4). Jedno zapytanie na tydzień.",
           "message_count": "Ile ostatnich wiadomości czytać (1–100)."
         }
       },

@@ -24,9 +24,11 @@ from custom_components.librus_apix.const import (
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
+    CONF_INTERVAL_TIMETABLE,
     CONF_MESSAGE_COUNT,
     CONF_SERVER_URL,
     CONF_TIMEFRAME,
+    CONF_TIMETABLE_WEEKS,
     DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
@@ -95,6 +97,8 @@ async def test_full_flow_with_defaults(
     assert result["options"] == DEFAULT_OPTIONS
     assert result["options"][CONF_INTERVAL_STUDENT] == 1440
     assert result["options"][CONF_INTERVAL_LUCKY_NUMBER] == 180
+    assert result["options"][CONF_INTERVAL_TIMETABLE] == 360
+    assert result["options"][CONF_TIMETABLE_WEEKS] == 1
     assert result["result"].unique_id == "zofia.testowa"
     assert (result["result"].version, result["result"].minor_version) == (1, 2)
     mock_api.assert_called_once_with(hass, "Zofia.Testowa", "secret", base_url=None)
@@ -112,7 +116,9 @@ async def test_settings_are_stored_as_options(
         CONF_INTERVAL_MESSAGES: 10,
         CONF_INTERVAL_ANNOUNCEMENTS: 1440,
         CONF_INTERVAL_SCHEDULE: 120,
+        CONF_INTERVAL_TIMETABLE: 720,
         CONF_TIMEFRAME: 6,
+        CONF_TIMETABLE_WEEKS: 4,
         CONF_MESSAGE_COUNT: 100,
     }
     result = await _settings_step(hass)
@@ -131,8 +137,12 @@ async def test_settings_are_stored_as_options(
         (CONF_INTERVAL_LUCKY_NUMBER, 9),
         (CONF_INTERVAL_LUCKY_NUMBER, 1441),
         (CONF_INTERVAL_SCHEDULE, 0),
+        (CONF_INTERVAL_TIMETABLE, 9),
+        (CONF_INTERVAL_TIMETABLE, 1441),
         (CONF_TIMEFRAME, -1),
         (CONF_TIMEFRAME, 7),
+        (CONF_TIMETABLE_WEEKS, -1),
+        (CONF_TIMETABLE_WEEKS, 5),
         (CONF_MESSAGE_COUNT, 0),
         (CONF_MESSAGE_COUNT, 101),
     ],
@@ -140,7 +150,8 @@ async def test_settings_are_stored_as_options(
 async def test_settings_out_of_range_are_rejected(
     hass: HomeAssistant, mock_api: MagicMock, key: str, value: int
 ) -> None:
-    """Intervals under 10 min, timeframe outside 0-6, count outside 1-100."""
+    """Intervals outside 10-1440 min, timeframe outside 0-6, timetable weeks
+    outside 0-4, count outside 1-100."""
     result = await _settings_step(hass)
 
     with pytest.raises(InvalidData):
@@ -153,8 +164,11 @@ async def test_settings_out_of_range_are_rejected(
         (CONF_INTERVAL_MESSAGES, 10),
         (CONF_INTERVAL_STUDENT, 1440),
         (CONF_INTERVAL_LUCKY_NUMBER, 10),
+        (CONF_INTERVAL_TIMETABLE, 10),
         (CONF_TIMEFRAME, 0),
         (CONF_TIMEFRAME, 6),
+        (CONF_TIMETABLE_WEEKS, 0),
+        (CONF_TIMETABLE_WEEKS, 4),
         (CONF_MESSAGE_COUNT, 1),
         (CONF_MESSAGE_COUNT, 100),
     ],
@@ -369,6 +383,8 @@ async def test_options_show_current_values_and_saving_reloads(
     defaults = {key.schema: key.default() for key in result["data_schema"].schema}
     assert defaults[CONF_INTERVAL_GRADES] == 30
     assert defaults[CONF_INTERVAL_LUCKY_NUMBER] == 180
+    assert defaults[CONF_INTERVAL_TIMETABLE] == 360
+    assert defaults[CONF_TIMETABLE_WEEKS] == 1
     # Empty submits keep the pre-filled values of both steps.
     result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert result["step_id"] == "averages"
@@ -387,6 +403,7 @@ async def test_options_show_current_values_and_saving_reloads(
             **DEFAULT_OPTIONS,
             CONF_INTERVAL_MESSAGES: 45,
             CONF_INTERVAL_LUCKY_NUMBER: 60,
+            CONF_TIMETABLE_WEEKS: 3,
             CONF_MESSAGE_COUNT: 50,
         },
     )
@@ -404,6 +421,7 @@ async def test_options_show_current_values_and_saving_reloads(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_INTERVAL_MESSAGES] == 45
     assert entry.options[CONF_INTERVAL_LUCKY_NUMBER] == 60
+    assert entry.options[CONF_TIMETABLE_WEEKS] == 3
     assert entry.options[CONF_MESSAGE_COUNT] == 50
     assert entry.options[CONF_AVERAGE_WEIGHTS] is False
     assert entry.options[CONF_AVERAGE_PLUS] == 0.25

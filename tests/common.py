@@ -388,17 +388,93 @@ def new_schema_table(subjects: dict[int, str]) -> str:
 BELLS = {1: ("08:00", "08:45"), 2: ("08:55", "09:40"), 3: ("09:50", "10:35")}
 
 
-def timetable_page(bells: dict[int, tuple[str, str]], monday: date) -> str:
-    """Return the timetable of one week (only the lesson times matter here)."""
+@dataclass
+class FakeLesson:
+    """A lesson of the timetable; ``label`` and ``tooltip`` make it a change.
+
+    ``tooltip`` holds the raw lines, for example
+    "Nauczyciel: <b>Adam Rachunek</b> -> <b>Zenon Zastępczy</b>".
+    """
+
+    day: date
+    number: int
+    subject: str
+    teacher: str = "Adam Rachunek"
+    room: str = "12"
+    label: str | None = None
+    tooltip: list[str] = field(default_factory=list)
+
+
+def default_lessons() -> list[FakeLesson]:
+    """Lessons of the weeks of 2026-10-19, 10-26 and 11-02 with every kind of change."""
+    return [
+        FakeLesson(date(2026, 10, 19), 1, "Matematyka"),
+        FakeLesson(date(2026, 10, 19), 2, "Język polski", "Ewa Ortografia", "8"),
+        FakeLesson(
+            date(2026, 10, 21),
+            3,
+            "Matematyka",
+            "Zenon Zastępczy",
+            label="zastępstwo",
+            tooltip=[
+                "Nauczyciel: <b>Adam Rachunek</b> -> <b>Zenon Zastępczy</b>",
+                "Data dodania: 2026-10-18 12:00:00",
+            ],
+        ),
+        FakeLesson(
+            date(2026, 10, 27), 3, "Historia", "Barbara Dawna", "10", "odwołane"
+        ),
+        FakeLesson(
+            date(2026, 10, 29),
+            1,
+            "Język angielski",
+            "Kate Grammar",
+            "21",
+            "zmiana sali",
+            ["Sala: <b>15</b> -> <b>21</b>"],
+        ),
+        FakeLesson(
+            date(2026, 11, 2), 2, "Wychowanie fizyczne", "Marek Biegowy", "sala gim."
+        ),
+    ]
+
+
+def _lesson_cell(lesson: FakeLesson) -> str:
+    text = (
+        f'<div class="text"><b>{lesson.subject}</b><br>'
+        f"&nbsp;-&nbsp;{lesson.teacher}&nbsp;s.&nbsp;{lesson.room}</div>"
+    )
+    if lesson.label is None:
+        return text
+    notice = f'<div class="center plan-lekcji-info">{lesson.label}</div>'
+    if lesson.tooltip:
+        title = html.escape("<br>".join(lesson.tooltip))
+        notice = f'<a href="javascript:void(0);" title="{title}">{notice}</a>'
+    if lesson.label == "odwołane":
+        return f"{notice}<s><s>{text}</s></s>"
+    return notice + text
+
+
+def timetable_page(
+    bells: dict[int, tuple[str, str]],
+    monday: date,
+    lessons: list[FakeLesson] | None = None,
+) -> str:
+    """Return the timetable of one week: lesson times and the lessons in it."""
+    cells_of = {(lesson.day, lesson.number): lesson for lesson in lessons or []}
     rows = []
     for number, (start, end) in bells.items():
-        cells = "".join(
-            '<td id="timetableEntryBox" class="line1" '
-            f'data-date="{monday + timedelta(days=d)}" data-date_from="{start}" '
-            f'data-date_to="{end}"></td>'
-            for d in range(7)
+        cells = []
+        for d in range(7):
+            lesson = cells_of.get((monday + timedelta(days=d), number))
+            cells.append(
+                '<td id="timetableEntryBox" class="line1" '
+                f'data-date="{monday + timedelta(days=d)}" data-date_from="{start}" '
+                f'data-date_to="{end}">{_lesson_cell(lesson) if lesson else ""}</td>'
+            )
+        rows.append(
+            f'<tr class="line1"><td class="center">{number}</td>{"".join(cells)}</tr>'
         )
-        rows.append(f'<tr class="line1"><td class="center">{number}</td>{cells}</tr>')
     return f'<table class="decorated plan-lekcji">{"".join(rows)}</table>'
 
 
@@ -536,6 +612,9 @@ class FakeServer:
     new_schema: dict[int, str] = field(default_factory=dict)
     events: list[FakeEvent] = field(default_factory=default_events)
     bells: dict[int, tuple[str, str]] = field(default_factory=lambda: dict(BELLS))
+    lessons: list[FakeLesson] = field(default_factory=default_lessons)
+    # Mondays whose timetable page cannot be parsed (holidays, broken page).
+    broken_weeks: set[date] = field(default_factory=set)
     lucky: str | None = "7"
     school: str = SCHOOL
 
@@ -571,8 +650,15 @@ class FakeServer:
         return info_page(lucky=self.lucky, school=self.school)
 
     def _timetable(self, request: Any, context: Any) -> str:
-        week = parse_qs(request.text or "")["tydzien"][0]
-        return timetable_page(self.bells, date.fromisoformat(week[:10]))
+        monday = date.fromisoformat(self.weeks_requested(request)[0])
+        if monday in self.broken_weeks:
+            return "<p>Brak planu lekcji</p>"
+        return timetable_page(self.bells, monday, self.lessons)
+
+    @staticmethod
+    def weeks_requested(*requests: Any) -> list[str]:
+        """Monday of each timetable request (from the tydzien field)."""
+        return [parse_qs(r.text or "")["tydzien"][0][:10] for r in requests]
 
     def _schedule(self, request: Any, context: Any) -> str:
         form = parse_qs(request.text or "")
@@ -599,3 +685,13 @@ class FakeServer:
     def paths(self) -> list[str]:
         """Paths of all requests so far."""
         return [request.path for request in self.mocker.request_history]
+
+    def timetable_weeks(self, start: int = 0) -> list[str]:
+        """Mondays of the timetable requests since request number ``start``."""
+        return self.weeks_requested(
+            *(
+                request
+                for request in self.mocker.request_history[start:]
+                if request.path == "/przegladaj_plan_lekcji"
+            )
+        )

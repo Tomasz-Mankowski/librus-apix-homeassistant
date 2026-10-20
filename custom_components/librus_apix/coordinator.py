@@ -33,8 +33,10 @@ from .const import (
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
+    CONF_INTERVAL_TIMETABLE,
     CONF_MESSAGE_COUNT,
     CONF_TIMEFRAME,
+    CONF_TIMETABLE_WEEKS,
     DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
@@ -62,6 +64,7 @@ from .schedule import (
     snapshot,
 )
 from .store import LibrusStore
+from .timetable import TimetableData, read_timetable, week_mondays
 from .tracker import Change, TrackedItem, Tracker
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,6 +86,7 @@ class LibrusData:
     announcements: AnnouncementsCoordinator
     grades: GradesCoordinator
     schedule: ScheduleCoordinator
+    timetable: TimetableCoordinator
 
 
 type LibrusConfigEntry = ConfigEntry[LibrusData]
@@ -509,3 +513,20 @@ class ScheduleCoordinator(LibrusCoordinator[ScheduleData]):
             scopes=[month_scope(date(year, month, 1)) for year, month in months],
         )
         return ScheduleData(months, events, changes)
+
+
+class TimetableCoordinator(LibrusCoordinator[TimetableData]):
+    """Lessons of the current week and the next N weeks (F3), one request per week."""
+
+    def __init__(
+        self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
+    ) -> None:
+        """Use the timetable interval and the timetable weeks option."""
+        super().__init__(hass, entry, api, "timetable", CONF_INTERVAL_TIMETABLE)
+        self._weeks = entry.options.get(
+            CONF_TIMETABLE_WEEKS, DEFAULT_OPTIONS[CONF_TIMETABLE_WEEKS]
+        )
+
+    async def _async_fetch(self) -> TimetableData:
+        mondays = week_mondays(dt_util.now(LIBRUS_TZ).date(), self._weeks)
+        return await self.api.async_call(read_timetable, mondays)

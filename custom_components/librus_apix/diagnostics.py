@@ -36,6 +36,7 @@ async def async_get_config_entry_diagnostics(
         "announcements": data.announcements,
         "grades": data.grades,
         "schedule": data.schedule,
+        "timetable": data.timetable,
     }
     stored = data.store.data
     return {
@@ -82,6 +83,7 @@ def _counts(data: LibrusData) -> dict[str, Any]:
     announcements = data.announcements.data
     grades = data.grades.data
     schedule = data.schedule.data
+    timetable = data.timetable.data
     return {
         "student": None
         if student is None
@@ -116,5 +118,18 @@ def _counts(data: LibrusData) -> dict[str, Any]:
             "months": [f"{year:04d}-{month:02d}" for year, month in schedule.months],
             "events": len(schedule.events),
             "types": sorted({event.type for event in schedule.events}),
+        },
+        "timetable": None
+        if timetable is None
+        else {
+            "weeks": [monday.isoformat() for monday in timetable.weeks],
+            "lessons": len(timetable.lessons),
+            "changes": sorted(
+                {
+                    change.type
+                    for lesson in timetable.lessons
+                    for change in lesson.changes
+                }
+            ),
         },
     }

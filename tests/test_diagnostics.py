@@ -76,6 +76,7 @@ async def test_poll_state_and_counts(
         "announcements",
         "grades",
         "schedule",
+        "timetable",
     }
     assert result["coordinators"]["schedule"] == {
         "last_update_success": True,
@@ -90,6 +91,9 @@ async def test_poll_state_and_counts(
     }
     assert data["lucky_number"] == {"shown": True}
     assert result["coordinators"]["lucky_number"]["interval_minutes"] == 180.0
+    # This week and the next (the lessons depend on today's date).
+    assert len(data["timetable"]["weeks"]) == 2
+    assert set(data["timetable"]) == {"weeks", "lessons", "changes"}
     assert data["messages"]["count"] == len(mock_server.messages)
     assert data["grades"]["subjects"] == len(mock_server.subjects)
     assert data["schedule"]["events"] > 0

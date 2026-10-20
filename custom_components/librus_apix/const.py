@@ -11,14 +11,17 @@ LIBRUS_TZ = ZoneInfo("Europe/Warsaw")
 CONF_SERVER_URL = "server_url"  # developer option: mock server, login skipped
 SECTION_DEVELOPER = "developer"
 
-# Options: poll intervals in minutes, schedule months ahead, message count
+# Options: poll intervals in minutes, schedule months and timetable weeks ahead,
+# message count
 CONF_INTERVAL_STUDENT = "interval_student"
 CONF_INTERVAL_LUCKY_NUMBER = "interval_lucky_number"
 CONF_INTERVAL_GRADES = "interval_grades"
 CONF_INTERVAL_MESSAGES = "interval_messages"
 CONF_INTERVAL_ANNOUNCEMENTS = "interval_announcements"
 CONF_INTERVAL_SCHEDULE = "interval_schedule"
+CONF_INTERVAL_TIMETABLE = "interval_timetable"
 CONF_TIMEFRAME = "timeframe"
+CONF_TIMETABLE_WEEKS = "timetable_weeks"
 CONF_MESSAGE_COUNT = "message_count"
 
 INTERVAL_OPTIONS = (
@@ -28,6 +31,7 @@ INTERVAL_OPTIONS = (
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_SCHEDULE,
+    CONF_INTERVAL_TIMETABLE,
 )
 DEFAULT_OPTIONS = {
     CONF_INTERVAL_STUDENT: 1440,
@@ -36,10 +40,17 @@ DEFAULT_OPTIONS = {
     CONF_INTERVAL_MESSAGES: 15,
     CONF_INTERVAL_ANNOUNCEMENTS: 15,
     CONF_INTERVAL_SCHEDULE: 60,
+    CONF_INTERVAL_TIMETABLE: 360,
     CONF_TIMEFRAME: 1,
+    CONF_TIMETABLE_WEEKS: 1,
     CONF_MESSAGE_COUNT: 20,
 }
-# Student-info interval default of entries made before 1.1.0 (minor version 1)
+# Options added in 1.1.0 (minor version 2) and the old student-info default
+NEW_OPTIONS_1_1 = (
+    CONF_INTERVAL_LUCKY_NUMBER,
+    CONF_INTERVAL_TIMETABLE,
+    CONF_TIMETABLE_WEEKS,
+)
 OLD_DEFAULT_INTERVAL_STUDENT = 360
 # Options: rules of the calculated averages (F13)
 CONF_AVERAGE_WEIGHTS = "average_weights"
@@ -57,6 +68,7 @@ MAX_GRADE_MODIFIER = 1.0
 MIN_INTERVAL = 10
 MAX_INTERVAL = 24 * 60
 MAX_TIMEFRAME = 6
+MAX_TIMETABLE_WEEKS = 4
 MIN_MESSAGE_COUNT = 1
 MAX_MESSAGE_COUNT = 100
 

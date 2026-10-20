@@ -9,11 +9,11 @@ from homeassistant.helpers.typing import ConfigType
 
 from .api import LibrusApi
 from .const import (
-    CONF_INTERVAL_LUCKY_NUMBER,
     CONF_INTERVAL_STUDENT,
     CONF_SERVER_URL,
     DEFAULT_OPTIONS,
     DOMAIN,
+    NEW_OPTIONS_1_1,
     OLD_DEFAULT_INTERVAL_STUDENT,
 )
 from .coordinator import (
@@ -25,6 +25,7 @@ from .coordinator import (
     MessagesCoordinator,
     ScheduleCoordinator,
     StudentInfoCoordinator,
+    TimetableCoordinator,
     lucky_number,
 )
 from .services import async_setup_services
@@ -73,10 +74,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bo
         announcements=AnnouncementsCoordinator(hass, entry, api, store),
         grades=GradesCoordinator(hass, entry, api, store),
         schedule=ScheduleCoordinator(hass, entry, api, store),
+        timetable=TimetableCoordinator(hass, entry, api),
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data = entry.runtime_data
-    for coordinator in (data.messages, data.announcements, data.grades, data.schedule):
+    for coordinator in (
+        data.messages,
+        data.announcements,
+        data.grades,
+        data.schedule,
+        data.timetable,
+    ):
         entry.async_create_background_task(
             hass, coordinator.async_refresh(), f"{coordinator.name} first refresh"
         )
@@ -86,16 +94,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bo
 async def async_migrate_entry(hass: HomeAssistant, entry: LibrusConfigEntry) -> bool:
     """Bring the options of an older entry up to date.
 
-    Minor version 2 (1.1.0): the lucky number gets its own interval; the
-    student-info interval moves to the new default only if it still holds the
-    old one (D-114). Home Assistant itself refuses entries of a newer major
+    Minor version 2 (1.1.0): new options for the lucky number and the timetable
+    with their defaults; the student-info interval moves to the new default only
+    if it still holds the old one (D-114). Home Assistant itself refuses entries of a newer major
     version; a newer minor version loads unchanged.
     """
     if entry.minor_version < 2:
         options = {**entry.options}
-        options.setdefault(
-            CONF_INTERVAL_LUCKY_NUMBER, DEFAULT_OPTIONS[CONF_INTERVAL_LUCKY_NUMBER]
-        )
+        for key in NEW_OPTIONS_1_1:
+            options.setdefault(key, DEFAULT_OPTIONS[key])
         if options.get(CONF_INTERVAL_STUDENT) == OLD_DEFAULT_INTERVAL_STUDENT:
             options[CONF_INTERVAL_STUDENT] = DEFAULT_OPTIONS[CONF_INTERVAL_STUDENT]
         hass.config_entries.async_update_entry(entry, options=options, minor_version=2)

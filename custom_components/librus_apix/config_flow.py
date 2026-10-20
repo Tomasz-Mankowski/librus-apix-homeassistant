@@ -37,6 +37,7 @@ from .const import (
     CONF_MESSAGE_COUNT,
     CONF_SERVER_URL,
     CONF_TIMEFRAME,
+    CONF_TIMETABLE_WEEKS,
     DEFAULT_AVERAGE_OPTIONS,
     DEFAULT_OPTIONS,
     DOMAIN,
@@ -45,6 +46,7 @@ from .const import (
     MAX_INTERVAL,
     MAX_MESSAGE_COUNT,
     MAX_TIMEFRAME,
+    MAX_TIMETABLE_WEEKS,
     MIN_INTERVAL,
     MIN_MESSAGE_COUNT,
     SECTION_DEVELOPER,
@@ -94,7 +96,7 @@ def _number(minimum: int, maximum: int, unit: str | None = None) -> NumberSelect
 
 
 def settings_schema(values: dict[str, Any]) -> vol.Schema:
-    """Schema of the settings (intervals, timeframe, message count)."""
+    """Schema of the settings (intervals, timeframe, timetable weeks, messages)."""
     schema: dict[Any, Any] = {
         vol.Required(key, default=values[key]): _number(
             MIN_INTERVAL, MAX_INTERVAL, "min"
@@ -103,6 +105,9 @@ def settings_schema(values: dict[str, Any]) -> vol.Schema:
     }
     schema[vol.Required(CONF_TIMEFRAME, default=values[CONF_TIMEFRAME])] = _number(
         0, MAX_TIMEFRAME
+    )
+    schema[vol.Required(CONF_TIMETABLE_WEEKS, default=values[CONF_TIMETABLE_WEEKS])] = (
+        _number(0, MAX_TIMETABLE_WEEKS)
     )
     schema[vol.Required(CONF_MESSAGE_COUNT, default=values[CONF_MESSAGE_COUNT])] = (
         _number(MIN_MESSAGE_COUNT, MAX_MESSAGE_COUNT)
@@ -154,7 +159,7 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Librus APIX: login, then settings."""
 
     VERSION = 1
-    # 2: own lucky-number interval (1.1.0); see async_migrate_entry
+    # 2: lucky-number and timetable options (1.1.0); see async_migrate_entry
     MINOR_VERSION = 2
 
     def __init__(self) -> None:
@@ -194,7 +199,7 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for the poll intervals, schedule timeframe and message count."""
+        """Ask for the poll intervals, schedule and timetable range, message count."""
         if user_input is not None:
             return self.async_create_entry(
                 title=self._title, data=self._data, options=settings_options(user_input)
