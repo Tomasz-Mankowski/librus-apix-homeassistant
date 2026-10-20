@@ -1,13 +1,13 @@
-# `librus-apix-homeassistant` - Librus dla Home Assistant
+# HALibrus - Librus dla Home Assistant
 
-Integracja [HACS](https://hacs.xyz/) dla Home Assistant. Odczytuje dane ucznia z Librus Synergia (oceny, wiadomości, ogłoszenia, terminarz) i udostępnia je jako encje oraz wyzwalacze automatyzacji. Implementacja w sposób minimalny i maksymalnie funkcjonalny. Integracja korzysta z [librus-apix](https://github.com/RustySnek/librus-apix).
+Integracja [HACS](https://hacs.xyz/) dla Home Assistant. Odczytuje dane ucznia z Librus Synergia (oceny, wiadomości, ogłoszenia, terminarz, plan lekcji) i udostępnia je jako encje oraz wyzwalacze automatyzacji. Implementacja w sposób minimalny i maksymalnie funkcjonalny. Integracja korzysta z [librus-apix](https://github.com/RustySnek/librus-apix).
 
 > [!IMPORTANT]
 > Projekt nieoficjalny. **Nie jest powiązany z firmą Librus** ani przez nią wspierany. Do logowania używaj tylko swojego prywatnego loginu i hasła do systemu Librus Synergia. Używaj na własną odpowiedzialność. **Autor nie ponosi odpowiedzialności za użycie integracji**, a także jakiekolwiek konsekwecje wynikające z korzystania z niej.
 
 ## Dedykowane karty panelu
 
-Dedykowane karty panelu: [librus-apix-homeassistant-ui](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant-ui).
+Dedykowane karty panelu: **HALibrus Cards** ([librus-apix-homeassistant-ui](https://github.com/Tomasz-Mankowski/librus-apix-homeassistant-ui)).
 
 ## Instalacja
 
@@ -17,19 +17,17 @@ Lub ręcznie:
 
 1. HACS → menu **⋮** → **Własne repozytoria**.
 2. Repozytorium: `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant`, typ: **Integracja**.
-3. Znajdź **Librus APIX** w HACS i kliknij **Pobierz**.
+3. Znajdź **HALibrus** w HACS i kliknij **Pobierz**.
 4. Uruchom Home Assistant ponownie.
 
 ## Co potrafi
 
-- Dane ucznia: imię i nazwisko, klasa, wychowawca, szkoła, numer w dzienniku, szczęśliwy numerek.
-- Oceny: jeden czujnik na przedmiot ze średnią, oceny śródroczne i roczne (także proponowane), oceny opisowe, średnia ogólna.
-- Wiadomości: ostatnie wiadomości odebrane (1–100). Treść jest czytana tylko na żądanie, bo Librus oznacza wtedy wiadomość jako przeczytaną.
-- Ogłoszenia: wszystkie ogłoszenia z pełną treścią.
-- Terminarz: kalendarz z godzinami lekcji dla bieżącego miesiąca i 0–6 kolejnych, także zastępstwa i odwołane lekcje.
-- Wyzwalacze: nowa wiadomość, nowe ogłoszenie, nowa lub zmieniona ocena, ocena okresowa, nowa ocena opisowa, nowe lub zmienione wydarzenie w terminarzu.
-- Kilku uczniów: każdy uczeń to osobny wpis integracji z własnym urządzeniem i encjami.
-- Język polski i angielski (według języka Home Assistant).
+- Dane ucznia i szczęśliwy numerek.
+- Oceny: średnia każdego przedmiotu i średnia ogólna, oceny okresowe i opisowe.
+- Wiadomości (treść tylko na żądanie) i ogłoszenia.
+- Terminarz i plan lekcji jako kalendarze, z zastępstwami i odwołanymi lekcjami.
+- Wyzwalacze i gotowe powiadomienia o nowościach.
+- Kilku uczniów; język polski i angielski.
 
 ## Wymagania
 
@@ -39,13 +37,37 @@ Lub ręcznie:
 
 ## Konfiguracja
 
-1. **Ustawienia** → **Urządzenia oraz usługi** → **Dodaj integrację** → **Librus APIX**.
+1. **Ustawienia** → **Urządzenia oraz usługi** → **Dodaj integrację** → **HALibrus**.
 2. Podaj login i hasło do Librus Synergia. Sekcję **Opcje deweloperskie** zostaw pustą (służy do testów z symulatorem).
 3. Skonfiguruj krok **Ustawienia odświeżania** i Zatwierdź.
 
-Drugiego ucznia dodajesz tak samo: **Dodaj integrację** → **Librus APIX** → login drugiego ucznia.
+Drugiego ucznia dodajesz tak samo: **Dodaj integrację** → **HALibrus** → login drugiego ucznia.
 
-Aby zmienić ustawienia sposobu liczenia średniej, po dodaniu integracji  kliknij przycisk **Konfiguruj** i skonfiguruj ponownie  **Ustawienia odświeżania** a następnie **Obliczane średniej**
+Ustawienia odświeżania:
+
+| Ustawienie | Domyślnie | Zakres |
+|---|---|---|
+| Dane ucznia (i godziny lekcji) | 1440 min | 10–1440 min |
+| Szczęśliwy numerek | 180 min | 10–1440 min |
+| Oceny | 15 min | 10–1440 min |
+| Wiadomości | 15 min | 10–1440 min |
+| Ogłoszenia | 15 min | 10–1440 min |
+| Terminarz | 60 min | 10–1440 min |
+| Plan lekcji | 360 min | 10–1440 min |
+| Miesiące terminarza do przodu | 1 | 0–6 |
+| Tygodnie planu lekcji do przodu | 1 (jedno zapytanie na tydzień) | 0–4 |
+| Liczba wiadomości | 20 | 1–100 |
+
+Aby zmienić ustawienia lub sposób liczenia średniej, po dodaniu integracji kliknij przycisk **Konfiguruj** i skonfiguruj ponownie **Ustawienia odświeżania**, a następnie **Obliczane średnie**.
+
+## Kalendarze
+
+Każdy uczeń ma dwa kalendarze:
+
+- **Terminarz** (`calendar.<uczen>_terminarz`): sprawdziany, wycieczki, zebrania, zastępstwa i odwołane lekcje.
+- **Plan lekcji** (`calendar.<uczen>_plan_lekcji`): jedna lekcja to jedno wydarzenie z godzinami i salą. Zmiana jest w tytule, np. `Matematyka (zastępstwo)` lub `Historia (odwołane)`.
+
+Opis wydarzenia to czytelne linie, a w ostatniej linii wszystkie pola w formacie JSON (do automatyzacji i kart).
 
 ## Wyzwalacze
 

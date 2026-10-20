@@ -3,6 +3,32 @@
 All notable changes of the `librus-apix-homeassistant` integration.
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.0 — 2026-10-21
+
+The integration is now called **HALibrus**. The domain (`librus_apix`), entity IDs, the action
+and the blueprints' file names stay, so existing entries, automations and dashboards keep working.
+
+### Added
+
+- Timetable calendar "Timetable" / "Plan lekcji" per student: one event per lesson with its times
+  and classroom; substitutions, cancelled lessons and classroom changes in the title and in the
+  JSON line of the description. Options: timetable interval (default 360 min) and weeks ahead
+  (current week + 0–4, default 1; one request per week).
+- The lucky number has its own update interval (default 180 min).
+- Subject sensors: each grade names the grade it corrects (`corrects`).
+
+### Changed
+
+- Display names: integration `HALibrus`, device model `HALibrus`, blueprints `HALibrus - …`.
+- The student info is read once a day by default (1440 min).
+- README: larger blueprint import buttons and a manual import path (Home Assistant 2026.10 does not
+  open the import window after the import link).
+
+### Upgrade
+
+- Entries of 1.0.0 are migrated (config entry 1.2): the new options get their defaults; a student
+  info interval still at the old default (360 min) becomes 1440 min, a value you set stays.
+
 ## 1.0.0 — 2026-10-19
 
 First release. Requires Home Assistant 2026.3 or newer and uses
