@@ -107,7 +107,7 @@ async def test_lessons_of_the_current_and_next_week(
             (
                 LessonChange(
                     "zastępstwo",
-                    teacher="Adam Rachunek -> Zenon Zastępczy",
+                    teacher_swap="Adam Rachunek -> Zenon Zastępczy",
                     date_added="2026-10-18 12:00:00",
                 ),
             ),
@@ -130,7 +130,7 @@ async def test_lessons_of_the_current_and_next_week(
             "Język angielski",
             "Kate Grammar",
             "21",
-            (LessonChange("zmiana sali", classroom="15 -> 21"),),
+            (LessonChange("zmiana sali", classroom_swap="15 -> 21"),),
         ),
     ]
     assert [lesson.cancelled for lesson in data.lessons] == [False] * 3 + [True, False]

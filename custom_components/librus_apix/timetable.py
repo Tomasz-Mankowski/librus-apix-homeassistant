@@ -5,19 +5,25 @@
 - One record per lesson: date, lesson number, times, subject, teacher, classroom
   and the changes Librus shows on it (substitution, cancellation, ...) with the
   details of their tooltip. Empty periods give no record.
+- Calendar: one event per lesson, location = classroom, a change in the title;
+  the description is readable lines, then one JSON line with all fields, like
+  the schedule (D-018), read back with ``schedule.parse_description``.
 - No triggers (D-113): lesson changes fire through the schedule.
 """
 
-from dataclasses import dataclass
-from datetime import date, timedelta
+from dataclasses import asdict, dataclass
+from datetime import date, datetime, timedelta
+import json
 import logging
 import re
+from typing import Any
 
 from librus_apix.client import Client
 from librus_apix.exceptions import DateError, ParseError
 from librus_apix.timetable import Period, get_timetable
 
 from .exceptions import LibrusParseError
+from .schedule import JSON_KEY, JSON_VERSION, local_time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,13 +38,13 @@ class LessonChange:
     """A notice Librus shows on a lesson, with the details of its tooltip.
 
     ``type`` is the Librus text (zastępstwo, odwołane, ...); the swaps are the
-    Librus texts "old -> new", empty when not given.
+    Librus texts "old -> new", empty when not given (names as in the library).
     """
 
     type: str
-    teacher: str = ""
-    subject: str = ""
-    classroom: str = ""
+    teacher_swap: str = ""
+    subject_swap: str = ""
+    classroom_swap: str = ""
     date_added: str = ""
 
 
@@ -113,9 +119,9 @@ def _changes(info: dict) -> tuple[LessonChange, ...]:
         changes.append(
             LessonChange(
                 type=label,
-                teacher=details.get("teacher_swap", "").strip(),
-                subject=details.get("subject_swap", "").strip(),
-                classroom=details.get("classroom_swap", "").strip(),
+                teacher_swap=details.get("teacher_swap", "").strip(),
+                subject_swap=details.get("subject_swap", "").strip(),
+                classroom_swap=details.get("classroom_swap", "").strip(),
                 date_added=details.get("date_added", "").strip(),
             )
         )
@@ -165,3 +171,69 @@ def read_timetable(client: Client, mondays: list[date]) -> TimetableData:
     return TimetableData(
         weeks, sorted(lessons, key=lambda item: (item.day, item.number))
     )
+
+
+def lesson_times(lesson: Lesson) -> tuple[date | datetime, date | datetime]:
+    """Return (start, end) of a lesson; all day if Librus gives no valid times."""
+    start, end = (
+        local_time(lesson.day, lesson.start),
+        local_time(lesson.day, lesson.end),
+    )
+    if start and end and end > start:
+        return start, end
+    return lesson.day, lesson.day + timedelta(days=1)
+
+
+def summary(lesson: Lesson) -> str:
+    """Calendar title: the subject, with the changes in brackets.
+
+    "Matematyka", "Matematyka (zastępstwo)", "Historia (odwołane)".
+    """
+    if lesson.changes:
+        return f"{lesson.subject} ({', '.join(c.type for c in lesson.changes)})"
+    return lesson.subject
+
+
+def lesson_fields(lesson: Lesson) -> dict[str, Any]:
+    """All fields of a lesson (JSON line)."""
+    return {
+        "id": lesson.id,
+        "date": lesson.day.isoformat(),
+        "lesson": lesson.number,
+        "start": lesson.start,
+        "end": lesson.end,
+        "subject": lesson.subject,
+        "teacher": lesson.teacher,
+        "classroom": lesson.classroom,
+        "cancelled": lesson.cancelled,
+        "changes": [asdict(change) for change in lesson.changes],
+    }
+
+
+_CHANGE_LABELS = (
+    ("teacher_swap", "Nauczyciel"),
+    ("subject_swap", "Przedmiot"),
+    ("classroom_swap", "Sala"),
+    ("date_added", "Data dodania"),
+)
+
+
+def describe(lesson: Lesson) -> str:
+    """Readable lines (Librus labels), then one JSON line with all fields (D-018)."""
+    lines = [f"Nr lekcji: {lesson.number}", f"Przedmiot: {lesson.subject}"]
+    if lesson.teacher:
+        lines.append(f"Nauczyciel: {lesson.teacher}")
+    if lesson.classroom:
+        lines.append(f"Sala: {lesson.classroom}")
+    for change in lesson.changes:
+        details = [
+            f"{label}: {value}"
+            for key, label in _CHANGE_LABELS
+            if (value := getattr(change, key))
+        ]
+        lines.append(
+            f"Zmiana: {change.type}" + (f" ({'; '.join(details)})" if details else "")
+        )
+    payload = {JSON_KEY: JSON_VERSION, **lesson_fields(lesson)}
+    lines.append(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    return "\n".join(lines)

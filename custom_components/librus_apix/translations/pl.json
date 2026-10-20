@@ -282,6 +282,9 @@
     "calendar": {
       "schedule": {
         "name": "Terminarz"
+      },
+      "timetable": {
+        "name": "Plan lekcji"
       }
     }
   },

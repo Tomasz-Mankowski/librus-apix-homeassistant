@@ -75,7 +75,7 @@ async def test_setup_creates_one_device_with_its_entities(
                 "descriptive_edukacja_zdrowotna",
                 "descriptive_grades",
                 "gpa",
-                *("schedule", "schedule"),
+                *("schedule", "schedule", "timetable"),
             ),
         ]
     )
@@ -133,7 +133,7 @@ async def test_unload_and_reload(
             er.async_get(hass), config_entry.entry_id
         )
     }
-    assert len(entity_ids) == 19
+    assert len(entity_ids) == 20
 
     with patch.object(LibrusApi, "close") as close:
         assert await hass.config_entries.async_unload(config_entry.entry_id)

@@ -55,6 +55,9 @@
     "calendar": {
       "schedule": {
         "default": "mdi:calendar-text"
+      },
+      "timetable": {
+        "default": "mdi:timetable"
       }
     }
   },

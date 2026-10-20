@@ -208,7 +208,8 @@ def read_bells(client: Client, today: date) -> Bells:
     }
 
 
-def _at(day: date, clock: str) -> datetime | None:
+def local_time(day: date, clock: str) -> datetime | None:
+    """Polish time of ``clock`` ("8:55", "08:55") on ``day``; None if not a time."""
     match = _HOUR.fullmatch(clock.strip())
     if match is None:
         return None
@@ -222,10 +223,10 @@ def event_times(
 ) -> tuple[date | datetime, date | datetime]:
     """Return (start, end): lesson times, one hour from the hour, or all day."""
     if event.lesson is not None and event.lesson in bells:
-        start, end = (_at(event.day, clock) for clock in bells[event.lesson])
+        start, end = (local_time(event.day, clock) for clock in bells[event.lesson])
         if start and end:
             return start, end
-    if event.hour and (start := _at(event.day, event.hour)):
+    if event.hour and (start := local_time(event.day, event.hour)):
         return start, start + timedelta(hours=1)
     return event.day, event.day + timedelta(days=1)
 
