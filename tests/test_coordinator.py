@@ -94,6 +94,6 @@ async def test_missing_option_uses_the_default(hass: HomeAssistant) -> None:
         hass, entry, MagicMock(), "x", CONF_INTERVAL_STUDENT
     )
 
-    assert coordinator.update_interval == timedelta(hours=6)
+    assert coordinator.update_interval == timedelta(hours=24)
     with pytest.raises(NotImplementedError):
         await coordinator._async_fetch()

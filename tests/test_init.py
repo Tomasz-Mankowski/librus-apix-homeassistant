@@ -14,7 +14,11 @@ import requests
 import requests_mock as rm
 
 from custom_components.librus_apix.api import LibrusApi
-from custom_components.librus_apix.const import CONF_INTERVAL_STUDENT, DOMAIN
+from custom_components.librus_apix.const import (
+    CONF_INTERVAL_LUCKY_NUMBER,
+    CONF_INTERVAL_STUDENT,
+    DOMAIN,
+)
 from custom_components.librus_apix.exceptions import LibrusAuthError
 
 from .common import MOCK_URL, SCHOOL
@@ -100,15 +104,21 @@ async def test_entity_names_in_polish(
 async def test_interval_comes_from_the_options(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:
-    """The coordinator polls at the interval set in the options."""
+    """The coordinators poll at the intervals set in the options."""
     hass.config_entries.async_update_entry(
-        config_entry, options={**config_entry.options, CONF_INTERVAL_STUDENT: 120}
+        config_entry,
+        options={
+            **config_entry.options,
+            CONF_INTERVAL_STUDENT: 120,
+            CONF_INTERVAL_LUCKY_NUMBER: 60,
+        },
     )
 
     await _setup(hass, config_entry)
 
-    coordinator = config_entry.runtime_data.student
-    assert coordinator.update_interval == timedelta(minutes=120)
+    data = config_entry.runtime_data
+    assert data.student.update_interval == timedelta(minutes=120)
+    assert data.lucky_number.update_interval == timedelta(minutes=60)
 
 
 @pytest.mark.usefixtures("mock_server")

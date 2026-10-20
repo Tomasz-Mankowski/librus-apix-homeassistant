@@ -71,6 +71,7 @@ async def test_poll_state_and_counts(
     assert result["backoff"] == {}
     assert set(result["coordinators"]) == {
         "student",
+        "lucky_number",
         "messages",
         "announcements",
         "grades",
@@ -87,6 +88,8 @@ async def test_poll_state_and_counts(
         "fields": ["class_name", "lucky_number", "name", "number", "school", "tutor"],
         "bells": 3,
     }
+    assert data["lucky_number"] == {"shown": True}
+    assert result["coordinators"]["lucky_number"]["interval_minutes"] == 180.0
     assert data["messages"]["count"] == len(mock_server.messages)
     assert data["grades"]["subjects"] == len(mock_server.subjects)
     assert data["schedule"]["events"] > 0

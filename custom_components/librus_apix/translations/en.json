@@ -30,6 +30,7 @@
         "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. You can change this later.",
         "data": {
           "interval_student": "Student info",
+          "interval_lucky_number": "Lucky number",
           "interval_grades": "Grades",
           "interval_messages": "Messages",
           "interval_announcements": "Announcements",
@@ -38,7 +39,8 @@
           "message_count": "Number of messages"
         },
         "data_description": {
-          "interval_student": "Minutes between updates of the student info and lucky number (10–1440).",
+          "interval_student": "Minutes between updates of the student info and bell times (10–1440).",
+          "interval_lucky_number": "Minutes between updates of the lucky number (10–1440).",
           "interval_grades": "Minutes between updates of the grades (10–1440).",
           "interval_messages": "Minutes between updates of the message list (10–1440).",
           "interval_announcements": "Minutes between updates of the announcements (10–1440).",
@@ -80,6 +82,7 @@
         "description": "How often Librus is read, how many months of the schedule are read and how many messages are kept. The integration reloads after saving.",
         "data": {
           "interval_student": "Student info",
+          "interval_lucky_number": "Lucky number",
           "interval_grades": "Grades",
           "interval_messages": "Messages",
           "interval_announcements": "Announcements",
@@ -88,7 +91,8 @@
           "message_count": "Number of messages"
         },
         "data_description": {
-          "interval_student": "Minutes between updates of the student info and lucky number (10–1440).",
+          "interval_student": "Minutes between updates of the student info and bell times (10–1440).",
+          "interval_lucky_number": "Minutes between updates of the lucky number (10–1440).",
           "interval_grades": "Minutes between updates of the grades (10–1440).",
           "interval_messages": "Minutes between updates of the message list (10–1440).",
           "interval_announcements": "Minutes between updates of the announcements (10–1440).",

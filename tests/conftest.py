@@ -53,11 +53,12 @@ def mock_server(requests_mock: rm.Mocker) -> FakeServer:
 
 @pytest.fixture
 def config_entry(hass: HomeAssistant) -> MockConfigEntry:
-    """An entry for mock A with the default options."""
+    """An entry for mock A with the default options (current minor version)."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Zofia Testowa",
         unique_id="zofia.testowa",
+        minor_version=2,
         data={
             CONF_USERNAME: "zofia.testowa",
             CONF_PASSWORD: "secret",

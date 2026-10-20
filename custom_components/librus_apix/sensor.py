@@ -1,5 +1,5 @@
-"""Sensors of a student: information (F3), messages (F7), announcements (F9),
-grades per subject (F11)."""
+"""Sensors of a student: information (F3), lucky number, messages (F7),
+announcements (F9), grades per subject (F11)."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -21,6 +21,7 @@ from .coordinator import (
     AnnouncementsCoordinator,
     GradesCoordinator,
     LibrusConfigEntry,
+    LuckyNumberCoordinator,
     MessagesCoordinator,
     StudentInfoCoordinator,
     announcement_details,
@@ -75,14 +76,6 @@ STUDENT_SENSORS = (
         translation_key="student_number",
         value_fn=lambda info: info.number,
     ),
-    StudentSensorDescription(
-        key="lucky_number",
-        translation_key="lucky_number",
-        # The library returns "?" when Librus shows no lucky number.
-        value_fn=lambda info: (
-            info.lucky_number if isinstance(info.lucky_number, int) else None
-        ),
-    ),
 )
 
 
@@ -99,6 +92,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             *(StudentSensor(data.student, desc) for desc in STUDENT_SENSORS),
+            LuckyNumberSensor(data.lucky_number),
             MessagesSensor(data.messages),
             AnnouncementsSensor(data.announcements),
             GpaSensor(data.grades),
@@ -140,6 +134,22 @@ class StudentSensor(LibrusEntity[StudentInfoCoordinator], SensorEntity):
     def native_value(self) -> StateType:
         """Return the field value."""
         return self.entity_description.value_fn(self.coordinator.data.info)
+
+
+class LuckyNumberSensor(LibrusEntity[LuckyNumberCoordinator], SensorEntity):
+    """Lucky number of the school (own interval, F4); unknown when none is shown."""
+
+    def __init__(self, coordinator: LuckyNumberCoordinator) -> None:
+        """Create the lucky-number sensor."""
+        super().__init__(
+            coordinator,
+            SensorEntityDescription(key="lucky_number", translation_key="lucky_number"),
+        )
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the lucky number."""
+        return self.coordinator.data.number
 
 
 class MessagesSensor(LibrusEntity[MessagesCoordinator], SensorEntity):

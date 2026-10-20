@@ -20,6 +20,7 @@ from custom_components.librus_apix.const import (
     CONF_AVERAGE_WEIGHTS,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_GRADES,
+    CONF_INTERVAL_LUCKY_NUMBER,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
@@ -92,7 +93,10 @@ async def test_full_flow_with_defaults(
     assert result["title"] == "Zofia Testowa"
     assert result["data"] == {CONF_USERNAME: "Zofia.Testowa", CONF_PASSWORD: "secret"}
     assert result["options"] == DEFAULT_OPTIONS
+    assert result["options"][CONF_INTERVAL_STUDENT] == 1440
+    assert result["options"][CONF_INTERVAL_LUCKY_NUMBER] == 180
     assert result["result"].unique_id == "zofia.testowa"
+    assert (result["result"].version, result["result"].minor_version) == (1, 2)
     mock_api.assert_called_once_with(hass, "Zofia.Testowa", "secret", base_url=None)
     assert len(mock_setup_entry.mock_calls) == 1
 
@@ -103,6 +107,7 @@ async def test_settings_are_stored_as_options(
     """Chosen settings become the entry options (whole numbers)."""
     settings = {
         CONF_INTERVAL_STUDENT: 720,
+        CONF_INTERVAL_LUCKY_NUMBER: 90,
         CONF_INTERVAL_GRADES: 30,
         CONF_INTERVAL_MESSAGES: 10,
         CONF_INTERVAL_ANNOUNCEMENTS: 1440,
@@ -123,6 +128,8 @@ async def test_settings_are_stored_as_options(
     [
         (CONF_INTERVAL_GRADES, 9),
         (CONF_INTERVAL_STUDENT, 1441),
+        (CONF_INTERVAL_LUCKY_NUMBER, 9),
+        (CONF_INTERVAL_LUCKY_NUMBER, 1441),
         (CONF_INTERVAL_SCHEDULE, 0),
         (CONF_TIMEFRAME, -1),
         (CONF_TIMEFRAME, 7),
@@ -145,6 +152,7 @@ async def test_settings_out_of_range_are_rejected(
     [
         (CONF_INTERVAL_MESSAGES, 10),
         (CONF_INTERVAL_STUDENT, 1440),
+        (CONF_INTERVAL_LUCKY_NUMBER, 10),
         (CONF_TIMEFRAME, 0),
         (CONF_TIMEFRAME, 6),
         (CONF_MESSAGE_COUNT, 1),
@@ -277,6 +285,7 @@ async def _loaded_entry(hass: HomeAssistant, **options: int) -> MockConfigEntry:
             CONF_SERVER_URL: MOCK_URL,
         },
         options={**DEFAULT_OPTIONS, **options},
+        minor_version=2,
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -357,6 +366,9 @@ async def test_options_show_current_values_and_saving_reloads(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "init"
+    defaults = {key.schema: key.default() for key in result["data_schema"].schema}
+    assert defaults[CONF_INTERVAL_GRADES] == 30
+    assert defaults[CONF_INTERVAL_LUCKY_NUMBER] == 180
     # Empty submits keep the pre-filled values of both steps.
     result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     assert result["step_id"] == "averages"
@@ -371,7 +383,12 @@ async def test_options_show_current_values_and_saving_reloads(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {**DEFAULT_OPTIONS, CONF_INTERVAL_MESSAGES: 45, CONF_MESSAGE_COUNT: 50},
+        {
+            **DEFAULT_OPTIONS,
+            CONF_INTERVAL_MESSAGES: 45,
+            CONF_INTERVAL_LUCKY_NUMBER: 60,
+            CONF_MESSAGE_COUNT: 50,
+        },
     )
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -386,6 +403,7 @@ async def test_options_show_current_values_and_saving_reloads(
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_INTERVAL_MESSAGES] == 45
+    assert entry.options[CONF_INTERVAL_LUCKY_NUMBER] == 60
     assert entry.options[CONF_MESSAGE_COUNT] == 50
     assert entry.options[CONF_AVERAGE_WEIGHTS] is False
     assert entry.options[CONF_AVERAGE_PLUS] == 0.25

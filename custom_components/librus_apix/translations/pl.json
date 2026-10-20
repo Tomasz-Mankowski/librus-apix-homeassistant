@@ -30,6 +30,7 @@
         "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Możesz to zmienić później.",
         "data": {
           "interval_student": "Dane ucznia",
+          "interval_lucky_number": "Szczęśliwy numerek",
           "interval_grades": "Oceny",
           "interval_messages": "Wiadomości",
           "interval_announcements": "Ogłoszenia",
@@ -38,7 +39,8 @@
           "message_count": "Liczba wiadomości"
         },
         "data_description": {
-          "interval_student": "Minuty między odświeżeniami danych ucznia i szczęśliwego numerka (10–1440).",
+          "interval_student": "Minuty między odświeżeniami danych ucznia i godzin lekcji (10–1440).",
+          "interval_lucky_number": "Minuty między odświeżeniami szczęśliwego numerka (10–1440).",
           "interval_grades": "Minuty między odświeżeniami ocen (10–1440).",
           "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
           "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",
@@ -80,6 +82,7 @@
         "description": "Jak często czytać dane z Librusa, ile miesięcy terminarza czytać i ile wiadomości przechowywać. Integracja przeładuje się po zapisaniu.",
         "data": {
           "interval_student": "Dane ucznia",
+          "interval_lucky_number": "Szczęśliwy numerek",
           "interval_grades": "Oceny",
           "interval_messages": "Wiadomości",
           "interval_announcements": "Ogłoszenia",
@@ -88,7 +91,8 @@
           "message_count": "Liczba wiadomości"
         },
         "data_description": {
-          "interval_student": "Minuty między odświeżeniami danych ucznia i szczęśliwego numerka (10–1440).",
+          "interval_student": "Minuty między odświeżeniami danych ucznia i godzin lekcji (10–1440).",
+          "interval_lucky_number": "Minuty między odświeżeniami szczęśliwego numerka (10–1440).",
           "interval_grades": "Minuty między odświeżeniami ocen (10–1440).",
           "interval_messages": "Minuty między odświeżeniami listy wiadomości (10–1440).",
           "interval_announcements": "Minuty między odświeżeniami ogłoszeń (10–1440).",

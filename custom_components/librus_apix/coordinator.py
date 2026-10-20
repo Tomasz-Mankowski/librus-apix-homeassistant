@@ -29,6 +29,7 @@ from .const import (
     CONF_AVERAGE_WEIGHTS,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_GRADES,
+    CONF_INTERVAL_LUCKY_NUMBER,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_SCHEDULE,
     CONF_INTERVAL_STUDENT,
@@ -77,6 +78,7 @@ class LibrusData:
     api: LibrusApi
     store: LibrusStore
     student: StudentInfoCoordinator
+    lucky_number: LuckyNumberCoordinator
     messages: MessagesCoordinator
     announcements: AnnouncementsCoordinator
     grades: GradesCoordinator
@@ -144,7 +146,7 @@ class LibrusCoordinator[T](DataUpdateCoordinator[T]):
 
 @dataclass
 class StudentData:
-    """Student information, lucky number and the bell schedule."""
+    """Student information and the bell schedule."""
 
     info: StudentInformation
     bells: Bells
@@ -156,7 +158,7 @@ def read_student(client: Client, today: date) -> StudentData:
 
 
 class StudentInfoCoordinator(LibrusCoordinator[StudentData]):
-    """Student information, lucky number and bell schedule (D-016)."""
+    """Student information and bell schedule (D-016)."""
 
     def __init__(
         self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
@@ -166,6 +168,36 @@ class StudentInfoCoordinator(LibrusCoordinator[StudentData]):
 
     async def _async_fetch(self) -> StudentData:
         return await self.api.async_call(read_student, dt_util.now(LIBRUS_TZ).date())
+
+
+@dataclass
+class LuckyNumber:
+    """Lucky number of the school; None when Librus shows none."""
+
+    number: int | None
+
+
+def lucky_number(info: StudentInformation) -> LuckyNumber:
+    """Lucky number of the information page (the library gives "?" for none)."""
+    number = info.lucky_number
+    return LuckyNumber(number if isinstance(number, int) else None)
+
+
+class LuckyNumberCoordinator(LibrusCoordinator[LuckyNumber]):
+    """Lucky number at its own interval (F4): the information page only.
+
+    The lucky number is on the student information page; this poll skips the
+    timetable that the student-info poll also reads.
+    """
+
+    def __init__(
+        self, hass: HomeAssistant, entry: LibrusConfigEntry, api: LibrusApi
+    ) -> None:
+        """Use the lucky-number interval."""
+        super().__init__(hass, entry, api, "lucky number", CONF_INTERVAL_LUCKY_NUMBER)
+
+    async def _async_fetch(self) -> LuckyNumber:
+        return lucky_number(await self.api.async_call(get_student_information))
 
 
 def librus_datetime(text: str) -> str:

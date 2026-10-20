@@ -154,6 +154,8 @@ class LibrusApixConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Librus APIX: login, then settings."""
 
     VERSION = 1
+    # 2: own lucky-number interval (1.1.0); see async_migrate_entry
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Start with no account."""

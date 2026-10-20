@@ -31,6 +31,7 @@ async def async_get_config_entry_diagnostics(
     data = entry.runtime_data
     coordinators: dict[str, LibrusCoordinator[Any]] = {
         "student": data.student,
+        "lucky_number": data.lucky_number,
         "messages": data.messages,
         "announcements": data.announcements,
         "grades": data.grades,
@@ -76,6 +77,7 @@ def _coordinator(coordinator: LibrusCoordinator[Any]) -> dict[str, Any]:
 def _counts(data: LibrusData) -> dict[str, Any]:
     """How much data each coordinator holds (None before its first poll)."""
     student = data.student.data
+    lucky = data.lucky_number.data
     messages = data.messages.data
     announcements = data.announcements.data
     grades = data.grades.data
@@ -89,6 +91,7 @@ def _counts(data: LibrusData) -> dict[str, Any]:
             ),
             "bells": len(student.bells),
         },
+        "lucky_number": None if lucky is None else {"shown": lucky.number is not None},
         "messages": None
         if messages is None
         else {

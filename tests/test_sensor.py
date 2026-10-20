@@ -1,9 +1,15 @@
-"""Tests for the student information sensors."""
+"""Tests for the student information and lucky-number sensors."""
 
+from datetime import timedelta
+
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.librus_apix.const import DOMAIN
 
@@ -44,15 +50,51 @@ async def test_long_school_name_is_cut_to_the_state_limit(
     assert _state(hass, config_entry, "school") == "S" * 255
 
 
-async def test_values_follow_the_coordinator(
+async def test_lucky_number_has_its_own_poll(
     hass: HomeAssistant, mock_server: FakeServer, config_entry: MockConfigEntry
 ) -> None:
-    """A new lucky number appears after the next refresh."""
+    """The lucky-number poll reads only the information page (F4).
+
+    The first lucky number comes from the student-info poll of the setup; later
+    the lucky number follows only its own poll.
+    """
     await _setup(hass, config_entry)
+    assert mock_server.paths().count("/informacja") == 1
+    assert _state(hass, config_entry, "lucky_number") == "7"
+    data = config_entry.runtime_data
+    mock_server.lucky = "21"
+
+    start = len(mock_server.paths())
+    await data.student.async_refresh()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert mock_server.paths()[start:] == ["/informacja", "/przegladaj_plan_lekcji"]
     assert _state(hass, config_entry, "lucky_number") == "7"
 
-    mock_server.lucky = "21"
-    await config_entry.runtime_data.student.async_refresh()
+    start = len(mock_server.paths())
+    await data.lucky_number.async_refresh()
     await hass.async_block_till_done(wait_background_tasks=True)
+    assert mock_server.paths()[start:] == ["/informacja"]
+    assert _state(hass, config_entry, "lucky_number") == "21"
 
+
+async def test_lucky_number_polls_after_its_interval(
+    hass: HomeAssistant,
+    mock_server: FakeServer,
+    config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The first lucky-number poll comes one interval (180 min) after the setup."""
+    await _setup(hass, config_entry)
+    mock_server.lucky = "21"
+
+    freezer.tick(timedelta(minutes=179))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert mock_server.paths().count("/informacja") == 1
+    assert _state(hass, config_entry, "lucky_number") == "7"
+
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert mock_server.paths().count("/informacja") == 2
     assert _state(hass, config_entry, "lucky_number") == "21"

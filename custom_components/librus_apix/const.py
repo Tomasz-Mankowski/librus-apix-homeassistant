@@ -13,6 +13,7 @@ SECTION_DEVELOPER = "developer"
 
 # Options: poll intervals in minutes, schedule months ahead, message count
 CONF_INTERVAL_STUDENT = "interval_student"
+CONF_INTERVAL_LUCKY_NUMBER = "interval_lucky_number"
 CONF_INTERVAL_GRADES = "interval_grades"
 CONF_INTERVAL_MESSAGES = "interval_messages"
 CONF_INTERVAL_ANNOUNCEMENTS = "interval_announcements"
@@ -22,13 +23,15 @@ CONF_MESSAGE_COUNT = "message_count"
 
 INTERVAL_OPTIONS = (
     CONF_INTERVAL_STUDENT,
+    CONF_INTERVAL_LUCKY_NUMBER,
     CONF_INTERVAL_GRADES,
     CONF_INTERVAL_MESSAGES,
     CONF_INTERVAL_ANNOUNCEMENTS,
     CONF_INTERVAL_SCHEDULE,
 )
 DEFAULT_OPTIONS = {
-    CONF_INTERVAL_STUDENT: 360,
+    CONF_INTERVAL_STUDENT: 1440,
+    CONF_INTERVAL_LUCKY_NUMBER: 180,
     CONF_INTERVAL_GRADES: 15,
     CONF_INTERVAL_MESSAGES: 15,
     CONF_INTERVAL_ANNOUNCEMENTS: 15,
@@ -36,6 +39,8 @@ DEFAULT_OPTIONS = {
     CONF_TIMEFRAME: 1,
     CONF_MESSAGE_COUNT: 20,
 }
+# Student-info interval default of entries made before 1.1.0 (minor version 1)
+OLD_DEFAULT_INTERVAL_STUDENT = 360
 # Options: rules of the calculated averages (F13)
 CONF_AVERAGE_WEIGHTS = "average_weights"
 CONF_AVERAGE_ONLY_COUNTED = "average_only_counted"
