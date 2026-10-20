@@ -51,13 +51,27 @@ Aby zmienić ustawienia sposobu liczenia średniej, po dodaniu integracji  klikn
 
 ### Gotowe powiadomienia/notyfikacje (blueprinty)
 
+Kliknij przycisk importu, a potem w Home Assistant **Podgląd** i **Importuj schemat**. Z zaimportowanego schematu utwórz automatyzację i wybierz uczniów.
+
 | Powiadomienie | Import |
 |---|---|
-| Nowa wiadomość | [![Import blueprintu](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_message.yaml) |
-| Nowe ogłoszenie | [![Import blueprintu](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_announcement.yaml) |
-| Oceny (nowe, zmienione, okresowe) | [![Import blueprintu](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_grade.yaml) |
-| Nowa ocena opisowa | [![Import blueprintu](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_descriptive_grade.yaml) |
-| Terminarz (nowe, zmienione) | [![Import blueprintu](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fschedule_event.yaml) |
+| Nowa wiadomość | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_message.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Importuj: nowa wiadomość" width="346"></a> |
+| Nowe ogłoszenie | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_announcement.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Importuj: nowe ogłoszenie" width="346"></a> |
+| Oceny (nowe, zmienione, okresowe) | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_grade.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Importuj: oceny (nowe, zmienione, okresowe)" width="346"></a> |
+| Nowa ocena opisowa | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fnew_descriptive_grade.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Importuj: nowa ocena opisowa" width="346"></a> |
+| Terminarz (nowe, zmienione) | <a href="https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FTomasz-Mankowski%2Flibrus-apix-homeassistant%2Fblob%2Fmaster%2Fblueprints%2Fautomation%2Flibrus_apix%2Fschedule_event.yaml"><img src="https://my.home-assistant.io/badges/blueprint_import.svg" alt="Importuj: terminarz (nowe, zmienione)" width="346"></a> |
+
+**Jeśli po kliknięciu otwiera się tylko lista schematów, bez okna importu** (tak działa Home Assistant 2026.10), zaimportuj schemat ręcznie:
+
+1. [Otwórz listę schematów w Home Assistant](https://my.home-assistant.io/redirect/blueprints/).
+2. Kliknij **Importuj schemat**.
+3. Wklej adres schematu z listy poniżej, kliknij **Podgląd**, a potem **Importuj schemat**.
+
+- Nowa wiadomość: `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/new_message.yaml`
+- Nowe ogłoszenie: `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/new_announcement.yaml`
+- Oceny (nowe, zmienione, okresowe): `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/new_grade.yaml`
+- Nowa ocena opisowa: `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/new_descriptive_grade.yaml`
+- Terminarz (nowe, zmienione): `https://github.com/Tomasz-Mankowski/librus-apix-homeassistant/blob/master/blueprints/automation/librus_apix/schedule_event.yaml`
 
 ### Szczegóły
 
