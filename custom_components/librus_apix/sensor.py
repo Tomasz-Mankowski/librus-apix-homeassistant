@@ -34,6 +34,7 @@ from .grades import (
     descriptive_details,
     final_details,
     grade_details,
+    grade_id,
     overall,
     period_average,
 )
@@ -257,8 +258,12 @@ class SubjectSensor(LibrusEntity[GradesCoordinator], SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the averages, the grades by semester and the final grades."""
+        """Return the averages, the grades by semester and the final grades.
+
+        A correction names the grade it corrects in ``corrects`` (D-125).
+        """
         rules = self.coordinator.rules
+        corrections = self.coordinator.data.corrections
         subject = self._grades
         averages = {}
         for period in PERIODS:
@@ -270,7 +275,13 @@ class SubjectSensor(LibrusEntity[GradesCoordinator], SensorEntity):
             "average_source": period_average(subject, self._current_period, rules)[1],
             "averages": averages,
             "grades": {
-                period: [grade_details(g, rules) for g in subject.grades[number]]
+                period: [
+                    {
+                        **grade_details(g, rules),
+                        "corrects": corrections.get(grade_id(g.href)),
+                    }
+                    for g in subject.grades[number]
+                ]
                 for number, period in ((1, PERIODS[0]), (2, PERIODS[1]))
             },
             "final_grades": [final_details(f) for f in subject.finals],

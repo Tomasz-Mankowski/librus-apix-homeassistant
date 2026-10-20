@@ -76,7 +76,11 @@ async def test_grades_and_final_grades_with_all_details(
         "counts": True,
         "teacher": "Adam Rachunek",
         "comment": "Działania",
+        "corrects": None,
     }
+    # The correction names the grade it corrects (D-125).
+    assert grades["1104"]["corrects"] == "1103"
+    assert [g["corrects"] for g in grades.values()].count(None) == 4
     assert grades["1102"]["value"] == 4.5
     assert grades["1105"]["value"] is None
     assert grades["1105"]["counts"] is False
